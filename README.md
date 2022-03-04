@@ -26,7 +26,7 @@ An Advanced Python APK Reverser and Patcher Tool.
 
 **• note 1: remove any whitespace found on the apk file name before patching**  
 **• note 2: you can use multiple method in a single run:**  
-`python dtlx.py --rmprop --rmads4 file.apk`
+`python dtlx.py --rmprop --rmads4 file.apk`  
 **• note 3: remember the execution of method start from left to right, based on the above command: remove .properties then remove ads**  
 **• note 4: if you want to update to the latest version just type:**  
 `git pull .`
