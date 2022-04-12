@@ -3,7 +3,6 @@ import hashlib
 import subprocess
 from loguru import logger
 
-isconsole = False
 endl = "\012"
 
 @logger.catch
@@ -12,6 +11,7 @@ class patcher:
 		self.endl = "\012"
 		self.isneutralize = False
 		self.ismodified = False
+		self.isclean = False
 		self.fin = fin
 		self.fnm = fin.split("/")[fin.split("/")[-1]] if "/" in fin else fin
 		if not os.path.isfile(self.fin):
@@ -40,34 +40,38 @@ class patcher:
 			elif args_iter=="rmads2":self.removeAds2()
 			elif args_iter=="rmads3":self.removeAds3()
 			elif args_iter=="rmads4":self.removeAds4()
+			elif args_iter=="rmads5":self.removeAds5()
 			elif args_iter=="rmnop":self.removeNop()
 			elif args_iter=="rmnown":self.removeUnknown()
 			elif args_iter=="customfont":self.customFont()
 			elif args_iter=="rmscrnrestrict":self.removeSetsecure()
-			elif args_iter=="rmcopy":self.bypassCopyProtection()
+			elif args_iter=="rmcopy":self.removeCopyProtection()
 			elif args_iter=="rmprop":self.removeProperties()
-		if not isconsole:
-			# Compile Project
-			print("\x1b[92m+++++ Compile Project into APK\x1b[0m")
-			os.system(f"apktool b -f -d {self.fout}")
-			print("\x1b[1;92m[+] Signing APK file... \x1b[0m",end="")
-			os.system(f"apksigner sign --ks assets/user.keystore --ks-key-alias user --ks-pass pass:12345678 {self.fout}/dist/{self.fnm}")
-			print("\x1b[1;92mOK\x1b[0m")
-			print("\x1b[1;92m[+] Verifying APK file... \x1b[0m",end="")
-			os.system(f"apksigner verify {self.fout}/dist/{self.fnm}")
-			print("\x1b[1;92mOK\x1b[0m")
-			self.signed = self.fnm
-			if self.signed.endswith(".apk"):
-				self.signed = self.signed[0:len(self.signed)-4]+"_sign.apk"
-			else:
-				self.signed = self.signed+"_sign.apk"
-			os.rename(self.fout+"/dist/"+self.fnm, self.fout+"/dist/"+self.signed)
+			elif args_iter=="rmtrackers":self.removeTrackers()
+			elif args_iter=="cleanrun":self.isclean=True
+		# Compile Project
+		print("\x1b[92m+++++ Compile Project into APK\x1b[0m")
+		os.system(f"apktool b -f -d {self.fout}")
+		print("\x1b[1;92m[+] Signing APK file... \x1b[0m",end="")
+		os.system(f"apksigner sign --ks assets/user.keystore --ks-key-alias user --ks-pass pass:12345678 {self.fout}/dist/{self.fnm}")
+		print("\x1b[1;92mOK\x1b[0m")
+		print("\x1b[1;92m[+] Verifying APK file... \x1b[0m",end="")
+		os.system(f"apksigner verify {self.fout}/dist/{self.fnm}")
+		print("\x1b[1;92mOK\x1b[0m")
+		self.signed = self.fnm
+		if self.signed.endswith(".apk"):
+			self.signed = self.signed[0:len(self.signed)-4]+"_sign.apk"
+		else:
+			self.signed = self.signed+"_sign.apk"
+		os.rename(self.fout+"/dist/"+self.fnm, self.signed)
+		# Delete Project if isclean = True
+		if self.isclean: os.system(f"rm -rf {self.fout}")
 	def warning(self,content):
 		print(f"\x1b[1;41;93m{content}\x1b[0m")
-		__import__("time").sleep(0.2)
+		__import__("time").sleep(0.1)
 	def success(self,content):
 		print(f"\x1b[1;92m{content}\x1b[0m")
-		__import__("time").sleep(0.2)
+		__import__("time").sleep(0.1)
 	def writeManifestXML(self):
 		if len(self.manifestxml.split("</manifest>")) > 1:
 			self.manifestxml = self.manifestxml.split("</manifest>")[0]+"</manifest>"
@@ -104,7 +108,7 @@ class patcher:
 			for fx in self.f_ls:
 				self.ffx = open(fx,"r").read()
 				if "\"ca-app-pub" in self.ffx:
-					self.success(f"[+] Found (\"ca-app-pub): {fx}... ",end="")
+					self.success(f"[+] Found (\"ca-app-pub): {fx}... ")
 					self.ffx = self.ffx.replace("\"ca-app-pub","\"noads")
 					self.success("FIXED")
 					open(fx,"w").write(self.ffx)
@@ -143,6 +147,20 @@ class patcher:
 					open(fx,"w").write(self.modifiedsourcefile)
 					self.ismodified = True
 		if self.ismodified: self.writeNeutralize()
+	def removeAds5(self):
+		for x in self.smalidir:
+			self.f_ls = subprocess.run(f"find {x}/",shell=True,check=True,stdout=subprocess.PIPE).stdout.decode().split(self.endl)
+			self.f_ls = list(filter(lambda x: not x.startswith(".") and x.strip() != "", self.f_ls))
+			self.f_ls = list(filter(lambda x: os.path.isfile(x) and x.endswith(".smali"), self.f_ls))
+			for fx in self.f_ls:
+				self.ffx = open(fx,"r").read()
+				if "\"ca-app-pub" in self.ffx:
+					ca_id = re.findall(r"(ca\-app\-pub\-[0-9][0-9][0-9][0-9])", self.ffx)
+					for i in ca_id: 
+						print("\x1b[1;41;93m[+] Found (\"ca-app-pub): {fx}... \x1b[0m",end="")
+						self.ffx = self.ffx.replace(i,"ca-app-pub-0000")
+						self.success("FIXED")
+					open(fx,"w").write(self.ffx)
 	def removeNop(self):
 		for x in self.smalidir:
 			self.f_ls = subprocess.run(f"find {x}/",shell=True,check=True,stdout=subprocess.PIPE).stdout.decode().split(self.endl)
@@ -180,7 +198,7 @@ class patcher:
 			list(map(lambda x: __import__("shutil").copyfile(fontPath,x),self.f_ls))
 			# Print all item, stdout
 			list(map(lambda x: self.warning(x),tmp_fls))
-	def bypassCopyProtection(self):
+	def removeCopyProtection(self):
 		# Retrieve list of files pertains to copy protection
 		self.f_ls = list(protection["copy"])
 		# Map: Rename item, starts with directoryName
@@ -265,6 +283,100 @@ class patcher:
 		open(self.fout+"/apktool.yml","w").write(self.modifiedsourcefile)
 	def removeSetsecure(self):
 		print("Still working on")
+	def removeTrackers(self):
+		for tracksx in trackers:
+			self.warning(tracksx[0]+": "+tracksx[2])
+			self.removeClass(tracksx[1])
+	def removeClass(self, class_name):
+		# Delete class com.crashlytics.android
+		for smalixdir in self.smalidir:
+			if os.path.isdir(smalixdir+"/"+class_name.replace(".","/")):
+				self.warning(smalixdir+"/"+class_name.replace(".","/"))
+				os.system(f"rm -rf {smalixdir}/"+class_name.replace(".","/"))
+		for smalixdir in self.smalidir:
+			self.f_ls = subprocess.run(f"find {smalixdir}/",shell=True,check=True,stdout=subprocess.PIPE).stdout.decode().split(self.endl)
+			self.f_ls = list(filter(lambda x: not x.startswith(".") and x.strip() != "", self.f_ls))
+			self.f_ls = list(filter(lambda x: x.endswith(""), self.f_ls))
+			self.f_ls = list(filter(lambda x: os.path.isfile(x), self.f_ls))
+			# Clean smali code that execute operations pertain to $class_name
+			for fx in self.f_ls:
+				self.ffx = open(fx,"r").read()
+				self.readperline = self.ffx.strip().split(endl)
+				while "" in self.readperline:
+					self.readperline.remove("")
+				self.modifiedsourcefile = ""
+				isgetobj = False
+				for rpl_iterx in self.readperline:
+					rplix = rpl_iterx.strip()
+					if class_name.replace(".","/") in rpl_iterx or class_name in rpl_iterx:
+						if rplix.startswith("invoke"):
+							if rpl_iterx.strip().endswith(")V"):
+								print("*"*int(system("tput cols")))
+								self.success(f"[+] Patch (invoke~()V): {fx}")
+								self.warning(rpl_iterx)
+								rpl_iterx = rpl_iterx.replace(rplix,"invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()V")
+								self.success(rpl_iterx)
+							elif rpl_iterx.strip().endswith(")Z"):
+								print("*"*int(system("tput cols")))
+								self.success(f"[+] Patch (invoke~()Z): {fx}")
+								self.warning(rpl_iterx)
+								rpl_iterx = rpl_iterx.replace(rplix,"invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z")
+								self.success(rpl_iterx)
+						elif rplix.startswith("move-result") and isgetobj:
+							print(f"\x1b[1;92m[+] Patch (new-instance): {fx}... \x1b[0m")
+							self.warning(rpl_iterx)
+							rpl_iterx = rpl_iterx.replace(rplix,"")
+							isgetobj = False
+						elif rplix.startswith("new-instance"):
+							print(f"\x1b[1;92m[+] Patch (new-instance): {fx}... \x1b[0m")
+							self.warning(rpl_iterx)
+							rpl_iterx = rpl_iterx.replace(rplix,"")
+							isgetobj = True
+						elif rplix.startswith("iget"):
+							print(f"\x1b[1;92m[+] Patch (iget): {fx}... \x1b[0m")
+							self.warning(rpl_iterx)
+							rpl_iterx = rpl_iterx.replace(rplix,"")
+						elif rplix.startswith("iput"):
+							print(f"\x1b[1;92m[+] Patch (iput): {fx}... \x1b[0m")
+							self.warning(rpl_iterx)
+							rpl_iterx = rpl_iterx.replace(rplix,"")
+						self.modifiedsourcefile += rpl_iterx+endl
+					elif rplix.startswith("const-string") and "\"crashlytics" in rplix.lower():
+						print(f"\x1b[1;92m[+] Patch (const-string): {fx}... \x1b[0m")
+						self.warning(rpl_iterx)
+						constvar = rplix.split(",")[0]
+						rpl_iterx = rpl_iterx.replace(rplix,f"{constvar}, \"null\"")
+						self.modifiedsourcefile += rpl_iterx+endl
+					else:
+						self.modifiedsourcefile += rpl_iterx+endl
+				open(fx,"w").write(self.modifiedsourcefile)
+				self.ismodified = True
+		if self.ismodified: self.writeNeutralize()
+		# Remove leftover from AndroidManifest.xml
+		self.cleanManifest(class_name)
+	def cleanManifest(self, targetClass):
+		# Remove leftover from AndroidManifest.xml
+		# Try 1: Using regex
+		reg = re.findall(r"(<.*? android:name=\""+targetClass+".*?/>)", self.manifestxml)
+		for iterx in reg:
+			self.warning(iterx)
+			self.manifestxml = self.manifestxml.replace(iterx,"")
+		# Try 2: Using regex
+		primarydata = {"meta-data","receiver","service"}
+		cpmanifest = list(filter(lambda x: x.strip() != "", self.manifestxml.strip().split(self.endl)))
+		isreceiver = False
+		ismetadata = False
+		isservice = False
+		allmatch = []
+		for xmltagi in primarydata:
+			reg = re.findall(rf'(<{xmltagi}((.|\n|\r)*?)</{xmltagi}>)', self.manifestxml)
+			if len(reg) != 0:
+				allmatch.append([x[0] for x in reg])
+		for regxi in allmatch:
+			if targetClass in regxi:
+				self.warning(regxi)
+				self.manifestxml = self.manifestxml.replace(regxi,"")
+		self.writeManifestXML()
 	###
 
 
@@ -278,11 +390,14 @@ helpbanner = """     __ __   __
 --rmads2: No Internet (remove the required permission to do so)
 --rmads3: Search using regex and replace string ("ca-app-pub) with ("noads)
 --rmads4: (Powerful) Disable all kind of ads loader base on the dictionary list
+--rmads5: Randomize first 4 digits of the 16 digits Admob Adunit and App ID
 --rmnop: Remove all nop instruction found on the smali file
 --rmunknown: Remove all unknown files (.properties, etc)
 --customfont: Update and replace all font files with user recommended file
---rmcopy: Bypass AppCloner Copy Protection
+--rmcopy: Remove AppCloner Copy Protection
 --rmprop: Remove only .properties file
+--rmtrackers: Remove Trackers
+--cleanrun: Remove the decompiled project after done patching
 """
 mainbanner = """                                                  
 \x1b[1;92m@@@@@@@   @@@@@@@  @@@                  @@@  @@@  \x1b[0m
@@ -321,7 +436,12 @@ strmatch = {
 		"loadNativeAd"
 	)
 }
-
+trackers = [
+	["Google CrashLytics","com.google.firebase.crashlytics","http://crashlytics.com"],
+	["Google Firebase Analytics","com.google.android.gms.measurement","https://firebase.google.com/"],
+	["Google Ads","com.google.android.gms.ads.mediation","https://developers.google.con/admob/android"],
+	["Pollfish","com.pollfish","https://www.pollfish.com"]
+]
 protection = {
 	"copy": (
 		"__launcher_icon.png",
@@ -344,7 +464,7 @@ kamusregex = (
 
 neutralize = """.class public Lsec/blackhole/dtlx/Schadenfreude;
 .super Ljava/lang/Object;
-.source "Schadenfreude"
+.source "Schadenfreude.java"
 
 .method public static neutralize()V
     .locals 0
@@ -389,6 +509,8 @@ def main():
 				funcls.append("rmads3")
 			elif px == "--rmads4":
 				funcls.append("rmads4")
+			elif px == "--rmads5":
+				funcls.append("rmads5")
 			elif px == "--rmnop":
 				funcls.append("rmnop")
 			elif px == "--rmunknown":
@@ -399,6 +521,10 @@ def main():
 				funcls.append("rmcopy")
 			elif px == "--rmprop":
 				funcls.append("rmprop")
+			elif px == "--rmtrackers":
+				funcls.append("rmtrackers")
+			elif px == "--cleanrun":
+				funcls.append("cleanrun")
 		patcher(ftarget,funcls)
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ An Advanced Python APK Reverser and Patcher Tool.
 --rmnop: Remove all nop instruction found on the smali file  
 --rmunknown: Remove all unknown files (.properties, etc)  
 --customfont: Update and replace all font files with user recommended file  
---rmcopy: Bypass AppCloner Copy Protection  
+--rmcopy: Remove AppCloner Copy Protection  
 --rmprop: Remove only .properties file  
 
 **• note 1: remove any whitespace found on the apk file name before patching**  
@@ -36,12 +36,15 @@ An Advanced Python APK Reverser and Patcher Tool.
 
 ### Requirements
 • python 3.x  
-• apktool (for decompile and recompile)  
+• apktool v2.6.1-dirty  
+• smali v2.5.2 and baksmali v2.5.2  
 • aapt & aapt2 (patched version, could be found on assets/)
+• apksigner
+• openjdk
 
 ### Installation
 ```bash
-apt install python git apktool
+apt install python git apktool apksigner openjdk-17
 git clone https://github.com/Gameye98/DTL-X
 python -m pip install loguru
 cd DTL-X
