@@ -440,7 +440,10 @@ trackers = [
 	["Google CrashLytics","com.google.firebase.crashlytics","http://crashlytics.com"],
 	["Google Firebase Analytics","com.google.android.gms.measurement","https://firebase.google.com/"],
 	["Google Ads","com.google.android.gms.ads.mediation","https://developers.google.con/admob/android"],
-	["Pollfish","com.pollfish","https://www.pollfish.com"]
+	["Pollfish","com.pollfish","https://www.pollfish.com"],
+	["Facebook Analytics","com.facebook.appevents","https://developers.facebook.com/docs/android"],
+	["Facebook Share","com.facebook.share","https://developers.facebook.com/docs/android"],
+	["Facebook Ads","com.facebook.ads","https://developers.facebook.com/docs/android"]
 ]
 protection = {
 	"copy": (

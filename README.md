@@ -40,9 +40,9 @@ An Advanced Python APK Reverser and Patcher Tool.
 • python 3.x  
 • apktool v2.6.1-dirty  
 • smali v2.5.2 and baksmali v2.5.2  
-• aapt & aapt2 (patched version, could be found on assets/)
-• apksigner
-• openjdk
+• aapt & aapt2 (patched version, could be found on assets/)  
+• apksigner  
+• openjdk  
 
 ### Installation
 ```bash
