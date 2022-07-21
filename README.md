@@ -24,6 +24,7 @@ An Advanced Python APK Reverser and Patcher Tool.
 --rmcopy: Remove AppCloner Copy Protection  
 --rmprop: Remove only .properties file  
 --rmtrackers: Remove Trackers  
+--nokill: No Kill  
 --cleanrun: Remove the decompiled project after done patching
 
 **• note 1: remove any whitespace found on the apk file name before patching**  

@@ -49,6 +49,7 @@ class patcher:
 			elif args_iter=="rmprop":self.removeProperties()
 			elif args_iter=="rmtrackers":self.removeTrackers()
 			elif args_iter=="cleanrun":self.isclean=True
+			elif args_iter=="nokill":self.nokill()
 		# Compile Project
 		print("\x1b[92m+++++ Compile Project into APK\x1b[0m")
 		os.system(f"apktool b -f -d {self.fout}")
@@ -377,6 +378,26 @@ class patcher:
 				self.warning(regxi)
 				self.manifestxml = self.manifestxml.replace(regxi,"")
 		self.writeManifestXML()
+	def nokill(self):
+		for x in self.smalidir:
+			self.f_ls = subprocess.run(f"find {x}/",shell=True,check=True,stdout=subprocess.PIPE).stdout.decode().split(self.endl)
+			self.f_ls = list(filter(lambda x: not x.startswith("."), self.f_ls))
+			for fx in self.f_ls:
+				if os.path.isfile(fx) and fx.endswith(".smali"):
+					self.ffx = open(fx,"r").read()
+					# Read Per Line
+					self.rpl = self.ffx.strip().split("\n")
+					while "" in self.rpl: self.rpl.remove("")
+					self.modifiedsourcefile = ""
+					for rpl_i in self.rpl:
+						isexitcalled = False
+						for exiti in kamusexit:
+							if exiti in rpl_i:
+								self.warning(rpl_i)
+								isexitcalled = True
+								break
+						if not isexitcalled: self.modifiedsourcefile += rpl_i+endl
+					open(fx,"w").write(self.modifiedsourcefile)
 	###
 
 
@@ -397,6 +418,7 @@ helpbanner = """     __ __   __
 --rmcopy: Remove AppCloner Copy Protection
 --rmprop: Remove only .properties file
 --rmtrackers: Remove Trackers
+--nokill: No Kill
 --cleanrun: Remove the decompiled project after done patching
 """
 mainbanner = """                                                  
@@ -464,6 +486,16 @@ kamusregex = (
 	("matchall_invoke","(invoke-.*\s\{.*\},\s)"),
 	("matchall_conststring","const-string\s(v[0-9]),\s\"(.*?)\"")
 )
+kamusexit = (
+	("Ljava/lang/System;->exit(I)V"),
+	("Landroid/app/Activity;->onDestroy()V"),
+	("Landroid/app/Activity;->finish()V"),
+	("Landroid/app/Service;->stopSelf()V"),
+	("Landroid/app/Activity;->finishActivity(I)V"),
+	("Landroid/os/Process;->killProcess(I)V"),
+	("Landroid/app/Activity;->finishAffinity()V"),
+	("Landroid/app/Activity;->finishAndRemoveTask()V")
+)
 
 neutralize = """.class public Lsec/blackhole/dtlx/Schadenfreude;
 .super Ljava/lang/Object;
@@ -528,6 +560,8 @@ def main():
 				funcls.append("rmtrackers")
 			elif px == "--cleanrun":
 				funcls.append("cleanrun")
+			elif px == "--nokill":
+				funcls.append("nokill")
 		patcher(ftarget,funcls)
 
 if __name__ == "__main__":
