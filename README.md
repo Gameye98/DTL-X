@@ -14,6 +14,26 @@
 
 # DTL-X
 An Advanced Python APK Reverser and Patcher Tool.  
+
+The purpose of the DTL-X is to provide a Python-based tool for reversing and patching Android applications (APKs). The tool can be used to remove ads, trackers, and other unwanted code from APKs. It can also be used to modify the behavior of APKs, such as by adding new features or changing the permissions that the app requires.
+
+The DTL-X tool is based on the apktool and smali tools. It uses these tools to decompile an APK into its original source code, which can then be modified. The tool also includes a number of features that make it easier to reverse and patch APKs, such as a graphical user interface and a built-in decompiler.
+
+The DTL-X tool is a powerful tool for anyone who wants to reverse or patch Android applications. It is easy to use and can be used to modify APKs in a variety of ways. The tool is also open source, so it can be modified and extended by anyone.
+
+Here are some of the features of DTL-X:
+
+* Remove ads  
+* Remove trackers  
+* Modify behavior  
+* Add new features  
+* Change permissions  
+* Graphical user interface  
+* Built-in decompiler  
+* Open source  
+
+If you are interested in reversing or patching Android applications, then I recommend checking out the DTL-X tool. It is a powerful and easy-to-use tool that can be used to modify APKs in a variety of ways.  
+
 --rmads1: target=AndroidManifest.xml,replace=com.google.android.gms.ad  
 --rmads2: No Internet (remove the required permission to do so)  
 --rmads3: Search using regex and replace string ("ca-app-pub) with ("noads)  
