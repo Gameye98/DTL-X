@@ -1,11 +1,9 @@
 import os, sys, re
 import hashlib
 import subprocess
-from loguru import logger
 
 endl = "\012"
 
-@logger.catch
 class patcher:
 	def __init__(self, fin, args):
 		self.endl = "\012"
