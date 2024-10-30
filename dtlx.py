@@ -1,8 +1,15 @@
 import os, sys, re
+import random
 import hashlib
 import subprocess
 
 endl = "\012"
+
+def randomid():
+	randomstr = ""
+	while len(randomstr) < 6:
+		randomstr += str(random.choice(list(range(0,10))))
+	return randomstr
 
 class patcher:
 	def __init__(self, fin, args):
@@ -15,16 +22,19 @@ class patcher:
 		if not os.path.isfile(self.fin):
 			raise FileNotFoundError(f"{self.fin}: No such file or directory")
 		self.fout = self.fnm
+		isselfout = False
 		if self.fout.endswith(".apk"):
 			self.fout = self.fout[0:len(self.fout)-4]
 		else:
 			self.fout = self.fout+".out"
-		while os.path.isdir(self.fout):
-			self.fout = self.fout+".out"
+			isselfout = True
+		if isselfout:
+			while os.path.isdir(self.fout):
+				self.fout = self.fout+".out"
 		self.raw = self.fout
 		# Decompile APK file
 		print("\x1b[92m+++++ Decompile APK into Project\x1b[0m")
-		os.system(f"apktool d {self.fin}")
+		os.system(f"apktool d -f {self.fin}")
 		self.manifestxml = open(f"{self.fout}/AndroidManifest.xml","r").read()
 		# Fixing bug where the manifest copy content itself many times
 		if len(self.manifestxml.split("</manifest>")) > 1:
@@ -48,6 +58,8 @@ class patcher:
 			elif args_iter=="rmtrackers":self.removeTrackers()
 			elif args_iter=="cleanrun":self.isclean=True
 			elif args_iter=="nokill":self.nokill()
+			elif args_iter=="findstr":self.findstr()
+			elif args_iter=="paidkw":self.paidkw()
 		# Compile Project
 		print("\x1b[92m+++++ Compile Project into APK\x1b[0m")
 		os.system(f"apktool b -f -d {self.fout}")
@@ -396,9 +408,126 @@ class patcher:
 								break
 						if not isexitcalled: self.modifiedsourcefile += rpl_i+endl
 					open(fx,"w").write(self.modifiedsourcefile)
-	###
-
-
+	def findstr(self):
+		texttofind = input("[*] Text to find: ")
+		self.searchresults = []
+		for f in self.smalidir:
+			f_ls = os.popen(f"find {f}/").read().splitlines()
+			while "" in f_ls: f_ls.remove("")
+			f_ls = list(map(lambda x: x.strip(), f_ls))
+			f_ls = list(filter(lambda x: os.path.isfile(x), f_ls))
+			for fx in f_ls:
+				with open(fx,"r") as smalifile:
+					lines = [x.strip() for x in smalifile.read().splitlines()]
+					classname = lines[0]
+					ismethod = False
+					methodname = None
+					for line in lines:
+						if line.startswith(".method"):
+							methodname = line
+							ismethod = True
+						elif line.startswith(".end method"):
+							ismethod = False
+						else:
+							if texttofind in line:
+								if line.startswith(".field"):
+									smaliobj = {}
+									smaliobj.update({"class": classname})
+									smaliobj.updatw({"path": fx})
+									smaliobj.update({"line": lines.index(line)})
+									smaliobj.update({"method": "None"})
+									smaliobj.update({"code": line})
+									self.searchresults.append(smaliobj)
+								elif ismethod:
+									smaliobj = {}
+									smaliobj.update({"class": classname})
+									smaliobj.update({"path": fx})
+									smaliobj.update({"line": lines.index(line)})
+									smaliobj.update({"method": methodname})
+									smaliobj.update({"code": line})
+									self.searchresults.append(smaliobj)
+		outfile = f"{self.fnm}_paidkeywords_{randomid()}.txt"
+		with open(f"{self.fnm}_findstring_{randomid()}.txt", "w") as f:
+			for k, v in enumerate(self.searchresults):
+				pathfiletext = f"PathFile: {v['path']}"
+				classnametext = f"ClassName: {v['class']}"
+				methodnametext = f"MethodName: {v['method']}"
+				linetext = f"Line: {v['line']}"
+				codetext = f"{v['code']}"
+				f.write(pathfiletext+"\n")
+				f.write(classnametext+"\n")
+				f.write(methodnametext+"\n")
+				f.write(linetext+"\n")
+				f.write("="*20+"\n")
+				f.write(codetext+"\n")
+				f.write("="*20+"\n\n")
+				print(f"\x1b[1;92m{pathfiletext}\x1b[0m")
+				print(f"\x1b[1;92m{classnametext}\x1b[0m")
+				print(f"\x1b[1;92m{methodnametext}\x1b[0m")
+				print(f"\x1b[1;92m{linetext}\x1b[0m")
+				print(f"\x1b[1;41;93m{codetext}\x1b[0m\n")
+		print("✅ Success! The file has been generated.")
+		print(f"📂 Location: {outfile}")
+	def paidkw(self):
+		self.searchkwresults = []
+		for f in self.smalidir:
+			f_ls = os.popen(f"find {f}/").read().splitlines()
+			while "" in f_ls: f_ls.remove("")
+			f_ls = list(map(lambda x: x.strip(), f_ls))
+			f_ls = list(filter(lambda x: os.path.isfile(x), f_ls))
+			for fx in f_ls:
+				with open(fx,"r") as smalifile:
+					lines = [x.strip() for x in smalifile.read().splitlines()]
+					classname = lines[0]
+					ismethod = False
+					methodname = None
+					for line in lines:
+						if line.startswith(".method"):
+							methodname = line
+							ismethod = True
+						elif line.startswith(".end method"):
+							ismethod = False
+						else:
+							for keyword in paidkeywords:
+								if keyword in line:
+									if line.startswith(".field"):
+										smaliobj = {}
+										smaliobj.update({"class": classname})
+										smaliobj.updatw({"path": fx})
+										smaliobj.update({"line": lines.index(line)})
+										smaliobj.update({"method": "None"})
+										smaliobj.update({"code": line})
+										self.searchkwresults.append(smaliobj)
+									elif ismethod:
+										smaliobj = {}
+										smaliobj.update({"class": classname})
+										smaliobj.update({"path": fx})
+										smaliobj.update({"line": lines.index(line)})
+										smaliobj.update({"method": methodname})
+										smaliobj.update({"code": line})
+										self.searchkwresults.append(smaliobj)
+		outfile = f"{self.fnm}_paidkeywords_{randomid()}.txt"
+		with open(outfile, "w") as f:
+			for k, v in enumerate(self.searchkwresults):
+				pathfiletext = f"PathFile: {v['path']}"
+				classnametext = f"ClassName: {v['class']}"
+				methodnametext = f"MethodName: {v['method']}"
+				linetext = f"Line: {v['line']}"
+				codetext = f"{v['code']}"
+				f.write(pathfiletext+"\n")
+				f.write(classnametext+"\n")
+				f.write(methodnametext+"\n")
+				f.write(linetext+"\n")
+				f.write("="*20+"\n")
+				f.write(codetext+"\n")
+				f.write("="*20+"\n\n")
+				print(f"\x1b[1;92m{pathfiletext}\x1b[0m")
+				print(f"\x1b[1;92m{classnametext}\x1b[0m")
+				print(f"\x1b[1;92m{methodnametext}\x1b[0m")
+				print(f"\x1b[1;92m{linetext}\x1b[0m")
+				print(f"\x1b[1;41;93m{codetext}\x1b[0m\n")
+		print("✅ Success! The file has been generated.")
+		print(f"📂 Location: {outfile}")
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -418,6 +547,8 @@ helpbanner = """     __ __   __
 --rmtrackers: Remove Trackers
 --nokill: No Kill
 --cleanrun: Remove the decompiled project after done patching
+--findstring: Find string / Search Text
+--paidkw: Search for InApp Purchased of Pro/Premium Features
 """
 mainbanner = """                                                  
 \x1b[1;92m@@@@@@@   @@@@@@@  @@@                  @@@  @@@  \x1b[0m
@@ -481,8 +612,8 @@ protection = {
 	)
 }
 kamusregex = (
-	("matchall_invoke","(invoke-.*\s\{.*\},\s)"),
-	("matchall_conststring","const-string\s(v[0-9]),\s\"(.*?)\"")
+	(r"matchall_invoke",r"(invoke-.*\s\{.*\},\s)"),
+	(r"matchall_conststring",r"const-string\s(v[0-9]),\s\"(.*?)\"")
 )
 kamusexit = (
 	("Ljava/lang/System;->exit(I)V"),
@@ -494,6 +625,17 @@ kamusexit = (
 	("Landroid/app/Activity;->finishAffinity()V"),
 	("Landroid/app/Activity;->finishAndRemoveTask()V")
 )
+paidkeywords = {
+	"ContainsKey", "ad_removed", "adremoved", "already_vip", "alreadyvip",
+	"billingprocessor", "contains", "getpremium", "go_premium", "gopremium",
+	"is_premium", "is_pro", "is_purchased", "is_subscribed", "is_vip",
+	"ispremium", "ispremium_user", "ispremiumuser", "ispro", "ispro_user",
+	"isprouser", "ispurchase", "ispurchased", "ispurchased ", "issubscribed",
+	"isuserpremium ", "isuservip", "isvip", "ivVipUser", "mispremium ",
+	"premium", "pro\"", "purchase", "purchaseType", "purchased",
+	"removed_ads", "subscribe", "subscribe_pro", "subscribed", "subscriberpro",
+	"unlocked", "vip", "vip_user", "vipuser",
+}
 
 neutralize = """.class public Lsec/blackhole/dtlx/Schadenfreude;
 .super Ljava/lang/Object;
@@ -560,6 +702,10 @@ def main():
 				funcls.append("cleanrun")
 			elif px == "--nokill":
 				funcls.append("nokill")
+			elif px == "--findstring":
+				funcls.append("findstr")
+			elif px == "--paidkw":
+				funcls.append("paidkw")
 		patcher(ftarget,funcls)
 
 if __name__ == "__main__":
