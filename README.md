@@ -45,7 +45,7 @@ If you are interested in reversing or patching Android applications, then I reco
 --rmprop: Remove only .properties file  
 --rmtrackers: Remove Trackers  
 --nokill: No Kill  
---cleanrun: Remove the decompiled project after done patching
+--cleanrun: Remove the decompiled project after done patching  
 --findstring: Find string / Search Text  
 --paidkw: Search for InApp Purchased of Pro/Premium Features  
 
