@@ -46,6 +46,8 @@ If you are interested in reversing or patching Android applications, then I reco
 --rmtrackers: Remove Trackers  
 --nokill: No Kill  
 --cleanrun: Remove the decompiled project after done patching
+--findstring: Find string / Search Text  
+--paidkw: Search for InApp Purchased of Pro/Premium Features  
 
 **• note 1: remove any whitespace found on the apk file name before patching**  
 **• note 2: you can use multiple method in a single run:**  
@@ -69,11 +71,11 @@ If you are interested in reversing or patching Android applications, then I reco
 ```bash
 apt install python git apktool apksigner openjdk-17
 git clone https://github.com/Gameye98/DTL-X
-python -m pip install loguru
 cd DTL-X
 # Btw you need to replace the old/regular aapt with the patched version
 # The old/regular version could not handle filename with symbol
 # You can find the patched version of aapt on directory assets/
+apt install aapt aapt2
 cp assets/aapt "$(command -v aapt)"
 cp assets/aapt2 "$(command -v aapt2)"
 python dtlx.py
