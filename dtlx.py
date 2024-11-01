@@ -550,6 +550,7 @@ helpbanner = """     __ __   __
 --findstring: Find string / Search Text
 --paidkw: Search for InApp Purchased of Pro/Premium Features
 """
+
 mainbanner = """                                                  
 \x1b[1;92m@@@@@@@   @@@@@@@  @@@                  @@@  @@@  \x1b[0m
 \x1b[1;92m@@@@@@@@  @@@@@@@  @@@                  @@@  @@@  \x1b[0m
@@ -564,6 +565,7 @@ mainbanner = """
 
 \x1b[1;41;93mAPK REVERSER & PATCHER - author by Gameye98 (BHSec)\x1b[0m
 """
+
 strmatch = {
 	"adloader": (
 		"loadAd",
@@ -587,6 +589,7 @@ strmatch = {
 		"loadNativeAd"
 	)
 }
+
 trackers = [
 	["Google CrashLytics","com.google.firebase.crashlytics","http://crashlytics.com"],
 	["Google Firebase Analytics","com.google.android.gms.measurement","https://firebase.google.com/"],
@@ -594,8 +597,30 @@ trackers = [
 	["Pollfish","com.pollfish","https://www.pollfish.com"],
 	["Facebook Analytics","com.facebook.appevents","https://developers.facebook.com/docs/android"],
 	["Facebook Share","com.facebook.share","https://developers.facebook.com/docs/android"],
-	["Facebook Ads","com.facebook.ads","https://developers.facebook.com/docs/android"]
+	["Facebook Ads","com.facebook.ads","https://developers.facebook.com/docs/android"],
+	["Amazon Advertisement", "com.amazon.device.ads", "https://advertising.amazon.com/API/docs/en-us/get-started/overview"],
+	["AppLovin", "com.applovin", "https://www.applovin.com/"] ,
+	["AppsFlyer", "com.appsflyer.", "https://www.appsflyer.com/"],
+	["CleverTap", "com.clevertap.", "https://clevertap.com/"],
+	["Criteo", "com.criteo.", "https://www.criteo.com/"],
+	["Firebase Analytics", "com.google.firebase.analytics.", "https://firebase.google.com/docs/analytics"],
+	["Firebase Analytics", "com.google.android.gms.measurement.", "https://firebase.google.com/docs/analytics"],
+	["Google AdMob", "com.google.ads.", "https://admob.google.com/home/"],
+	["Google AdMob", "com.google.android.gms.ads.AdView", "https://admob.google.com/home/"],
+	["Google AdMob", "com.google.android.gms.ads.AdActivity", "https://admob.google.com/home/"],
+	["Google AdMob", "com.google.android.gms.ads.AdRequest", "https://admob.google.com/home/"],
+	["Google AdMob", "com.google.android.gms.ads.mediation", "https://admob.google.com/home/"],
+	["IAB Open Measurement", "com.iab.omid.library", "https://iabtechlab.com/standards/open-measurement-sdk/"],
+	["InMobi", "com.inmobi", "https://www.inmobi.com/"],
+	["ironSource", "com.ironsource.", "https://www.is.com/"],
+	["Unity3d Ads", "com.unity3d.services", "https://unity.com/products/unity-ads"],
+	["Unity3d Ads", "com.unity3d.ads", "https://unity.com/products/unity-ads"],
+	["²Agora Analytics", "io.agora.utils.", "https://www.agora.io/en/products/agora-analytics/"],
+	["²Google ML Kit", "com.google.mlkit", "https://developers.google.com/ml-kit"],
+	["²Google Play Billing Library / Service", "com.android.billingclient", "https://developer.android.com/google/play/billing/integrate"],
+	["Freshchat", "com.freshchat", "https://www.freshworks.com/live-chat-software"]
 ]
+
 protection = {
 	"copy": (
 		"__launcher_icon.png",
@@ -611,10 +636,12 @@ protection = {
 		"lib/armeabi-v7a/libsandhook.so"
 	)
 }
+
 kamusregex = (
 	(r"matchall_invoke",r"(invoke-.*\s\{.*\},\s)"),
 	(r"matchall_conststring",r"const-string\s(v[0-9]),\s\"(.*?)\"")
 )
+
 kamusexit = (
 	("Ljava/lang/System;->exit(I)V"),
 	("Landroid/app/Activity;->onDestroy()V"),
@@ -625,6 +652,7 @@ kamusexit = (
 	("Landroid/app/Activity;->finishAffinity()V"),
 	("Landroid/app/Activity;->finishAndRemoveTask()V")
 )
+
 paidkeywords = {
 	"ContainsKey", "ad_removed", "adremoved", "already_vip", "alreadyvip",
 	"billingprocessor", "contains", "getpremium", "go_premium", "gopremium",
