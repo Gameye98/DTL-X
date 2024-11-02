@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os, sys, re
 import random
 import hashlib
