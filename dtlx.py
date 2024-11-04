@@ -63,7 +63,7 @@ class patcher:
 			elif args_iter=="paidkw":self.paidkw()
 		# Compile Project
 		print("\x1b[92m+++++ Compile Project into APK\x1b[0m")
-		os.system(f"apktool b -f -d {self.fout}")
+		os.system(f"apktool b -f --use-aapt2 -a $PREFIX/bin/aapt2  {self.fout}")
 		print("\x1b[1;92m[+] Signing APK file... \x1b[0m",end="")
 		os.system(f"apksigner sign --ks assets/user.keystore --ks-key-alias user --ks-pass pass:12345678 {self.fout}/dist/{self.fnm}")
 		print("\x1b[1;92mOK\x1b[0m")
