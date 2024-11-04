@@ -67,7 +67,7 @@ class patcher:
 		print("\x1b[1;92m[+] Signing APK file... \x1b[0m",end="")
 		os.system(f"apksigner sign --ks assets/user.keystore --ks-key-alias user --ks-pass pass:12345678 {self.fout}/dist/{self.fnm}")
 		print("\x1b[1;92mOK\x1b[0m")
-		print("\x1b[1;92m[+] Verifying APK file... \x1b[0m",end="")
+		print("\x1b[1;92m[+] Verifying APK file.... \x1b[0m",end="")
 		os.system(f"apksigner verify {self.fout}/dist/{self.fnm}")
 		print("\x1b[1;92mOK\x1b[0m")
 		self.signed = self.fnm
