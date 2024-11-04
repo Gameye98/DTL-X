@@ -19,7 +19,7 @@ class patcher:
 		self.ismodified = False
 		self.isclean = False
 		self.fin = fin
-		self.fnm = fin.split("/")[fin.split("/")[-1]] if "/" in fin else fin
+		self.fnm = fin.split("/")[-1] if "/" in fin else fin
 		if not os.path.isfile(self.fin):
 			raise FileNotFoundError(f"{self.fin}: No such file or directory")
 		self.fout = self.fnm
