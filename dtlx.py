@@ -494,7 +494,7 @@ class patcher:
 									if line.startswith(".field"):
 										smaliobj = {}
 										smaliobj.update({"class": classname})
-										smaliobj.updatw({"path": fx})
+										smaliobj.update({"path": fx})
 										smaliobj.update({"line": lines.index(line)})
 										smaliobj.update({"method": "None"})
 										smaliobj.update({"code": line})
