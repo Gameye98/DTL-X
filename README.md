@@ -48,6 +48,7 @@ If you are interested in reversing or patching Android applications, then I reco
 --cleanrun: Remove the decompiled project after done patching  
 --findstring: Find string / Search Text  
 --paidkw: Search for InApp Purchased of Pro/Premium Features  
+--noc: No Compile
 
 **• note 1: remove any whitespace found on the apk file name before patching**  
 **• note 2: you can use multiple method in a single run:**  
