@@ -19,6 +19,7 @@ class patcher:
 		self.isneutralize = False
 		self.ismodified = False
 		self.isclean = False
+		self.iscompile = True
 		self.fin = fin
 		self.fnm = fin.split("/")[-1] if "/" in fin else fin
 		if not os.path.isfile(self.fin):
@@ -62,23 +63,25 @@ class patcher:
 			elif args_iter=="nokill":self.nokill()
 			elif args_iter=="findstr":self.findstr()
 			elif args_iter=="paidkw":self.paidkw()
+			elif args_iter=="nocompile":self.iscompile=False
 		# Compile Project
-		print("\x1b[92m+++++ Compile Project into APK\x1b[0m")
-		os.system(f"apktool b -f --use-aapt2 -a assets/aapt2 -d {self.fout}")
-		print("\x1b[1;92m[+] Signing APK file... \x1b[0m",end="")
-		os.system(f"apksigner sign --ks assets/user.keystore --ks-key-alias user --ks-pass pass:12345678 {self.fout}/dist/{self.fnm}")
-		print("\x1b[1;92mOK\x1b[0m")
-		print("\x1b[1;92m[+] Verifying APK file.... \x1b[0m",end="")
-		os.system(f"apksigner verify {self.fout}/dist/{self.fnm}")
-		print("\x1b[1;92mOK\x1b[0m")
-		self.signed = self.fnm
-		if self.signed.endswith(".apk"):
-			self.signed = self.signed[0:len(self.signed)-4]+"_sign.apk"
-		else:
-			self.signed = self.signed+"_sign.apk"
-		os.rename(self.fout+"/dist/"+self.fnm, self.signed)
-		# Delete Project if isclean = True
-		if self.isclean: os.system(f"rm -rf {self.fout}")
+		if self.iscompile:
+			print("\x1b[92m+++++ Compile Project into APK\x1b[0m")
+			os.system(f"apktool b -f --use-aapt2 -a assets/aapt2 -d {self.fout}")
+			print("\x1b[1;92m[+] Signing APK file... \x1b[0m",end="")
+			os.system(f"apksigner sign --ks assets/user.keystore --ks-key-alias user --ks-pass pass:12345678 {self.fout}/dist/{self.fnm}")
+			print("\x1b[1;92mOK\x1b[0m")
+			print("\x1b[1;92m[+] Verifying APK file.... \x1b[0m",end="")
+			os.system(f"apksigner verify {self.fout}/dist/{self.fnm}")
+			print("\x1b[1;92mOK\x1b[0m")
+			self.signed = self.fnm
+			if self.signed.endswith(".apk"):
+				self.signed = self.signed[0:len(self.signed)-4]+"_sign.apk"
+			else:
+				self.signed = self.signed+"_sign.apk"
+			os.rename(self.fout+"/dist/"+self.fnm, self.signed)
+			# Delete Project if isclean = True
+			if self.isclean: os.system(f"rm -rf {self.fout}")
 	def warning(self,content):
 		print(f"\x1b[1;41;93m{content}\x1b[0m")
 		__import__("time").sleep(0.1)
@@ -551,6 +554,7 @@ helpbanner = """     __ __   __
 --cleanrun: Remove the decompiled project after done patching
 --findstring: Find string / Search Text
 --paidkw: Search for InApp Purchased of Pro/Premium Features
+--noc: No compile/build the working project
 """
 
 mainbanner = """                                                  
@@ -736,6 +740,8 @@ def main():
 				funcls.append("findstr")
 			elif px == "--paidkw":
 				funcls.append("paidkw")
+			elif px == "--noc":
+				funcls.append("nocompile")
 		patcher(ftarget,funcls)
 
 if __name__ == "__main__":
