@@ -21,27 +21,41 @@ class patcher:
 		self.isclean = False
 		self.iscompile = True
 		self.fin = fin
+		#if not os.path.isfile(self.fin):
+			#raise FileNotFoundError(f"{self.fin}: No such file or directory")
+		self.isproject = False
+		if os.path.isfile(self.fin):
+			with open(self.fin, "rb") as f:
+				stream = f.read()
+				if stream[0:4] != b"PK\x03\x04":
+					raise FileNotFoundError(f"dtlx: '{self.fin}': Not detected as an APK")
+		elif os.path.isdir(self.fin):
+			while self.fin.endswith("/"):
+				self.fin = self.fin[0:len(self.fin)-1]
+			if not os.path.isdir(self.fin+"/smali"):
+				raise FileNotFoundError(f"dtlx: '{self.fin}': Not detected as a project because of the missing 'smali' directory")
+			self.isproject = True
 		self.fnm = fin.split("/")[-1] if "/" in fin else fin
-		if not os.path.isfile(self.fin):
-			raise FileNotFoundError(f"{self.fin}: No such file or directory")
 		self.fout = self.fnm
-		isselfout = False
-		if self.fout.endswith(".apk"):
-			self.fout = self.fout[0:len(self.fout)-4]
-		else:
-			self.fout = self.fout+".out"
-			isselfout = True
-		if isselfout:
+		if not self.isproject:
+			# isselfout = False
+			if self.fout.endswith(".apk"):
+				self.fout = self.fout[0:len(self.fout)-4]
+			else:
+				self.fout = self.fout+".out"
+				# isselfout = True
+			# if isselfout:
 			while os.path.isdir(self.fout):
 				self.fout = self.fout+".out"
 		self.raw = self.fout
-		# Decompile APK file
-		print("\x1b[92m+++++ Decompile APK into Project\x1b[0m")
-		os.system(f"apktool d -f {self.fin}")
-		self.manifestxml = open(f"{self.fout}/AndroidManifest.xml","r").read()
-		# Fixing bug where the manifest copy content itself many times
-		if len(self.manifestxml.split("</manifest>")) > 1:
-			self.manifestxml = self.manifestxml.split("</manifest>")[0]+"</manifest>"
+		if not self.isproject:
+			# Decompile APK file
+			print("\x1b[92m+++++ Decompile APK into Project\x1b[0m")
+			os.system(f"java -jar apkeditor.jar d -i {self.fin} -o {self.fout}")
+			self.manifestxml = open(f"{self.fout}/AndroidManifest.xml","r").read()
+			## Fixing bug where the manifest copy content itself many times
+			#if len(self.manifestxml.split("</manifest>")) > 1:
+				#self.manifestxml = self.manifestxml.split("</manifest>")[0]+"</manifest>"
 		self.smalidir = list(filter(lambda x: x.startswith("smali"), os.listdir(self.fout)))
 		self.smalidir = list(map(lambda x: self.fout+"/"+x, self.smalidir))
 		self.args = args
@@ -66,20 +80,28 @@ class patcher:
 			elif args_iter=="nocompile":self.iscompile=False
 		# Compile Project
 		if self.iscompile:
+			if os.path.isdir(f"{self.fout}/resources"):
+				self.compilecmd = f"java -jar apkeditor.jar b -i {self.fout} -o {self.fout}_dtlx.apk"
+				self.compiled = f"{self.fout}_dtlx.apk"
+			elif os.path.isdir(f"{self.fout}/res"):
+				self.compilecmd = f"apktool b -f --use-aapt2 -a assets/aapt2 -d {self.fout}"
+				self.compiled = f"{self.fout}/dist/{self.fout}.apk"
+			else:
+				raise FileNotFoundError(f"dtlx: '{self.fout}': Not identified as project directory because of the missing resource directory")
 			print("\x1b[92m+++++ Compile Project into APK\x1b[0m")
-			os.system(f"apktool b -f --use-aapt2 -a assets/aapt2 -d {self.fout}")
+			os.system(self.compilecmd)
 			print("\x1b[1;92m[+] Signing APK file... \x1b[0m",end="")
-			os.system(f"apksigner sign --ks assets/user.keystore --ks-key-alias user --ks-pass pass:12345678 {self.fout}/dist/{self.fnm}")
+			os.system(f"apksigner sign --ks assets/user.keystore --ks-key-alias user --ks-pass pass:12345678 {self.compiled}")
 			print("\x1b[1;92mOK\x1b[0m")
 			print("\x1b[1;92m[+] Verifying APK file.... \x1b[0m",end="")
-			os.system(f"apksigner verify {self.fout}/dist/{self.fnm}")
+			os.system(f"apksigner verify {self.compiled}")
 			print("\x1b[1;92mOK\x1b[0m")
-			self.signed = self.fnm
+			self.signed = self.compiled
 			if self.signed.endswith(".apk"):
 				self.signed = self.signed[0:len(self.signed)-4]+"_sign.apk"
 			else:
 				self.signed = self.signed+"_sign.apk"
-			os.rename(self.fout+"/dist/"+self.fnm, self.signed)
+			os.rename(self.compiled, self.signed)
 			# Delete Project if isclean = True
 			if self.isclean: os.system(f"rm -rf {self.fout}")
 	def warning(self,content):
@@ -451,7 +473,7 @@ class patcher:
 									smaliobj.update({"method": methodname})
 									smaliobj.update({"code": line})
 									self.searchresults.append(smaliobj)
-		outfile = f"{self.fnm}_paidkeywords_{randomid()}.txt"
+		outfile = f"{self.fnm}_findstring_{randomid()}.txt"
 		with open(f"{self.fnm}_findstring_{randomid()}.txt", "w") as f:
 			for k, v in enumerate(self.searchresults):
 				pathfiletext = f"PathFile: {v['path']}"
@@ -704,7 +726,7 @@ def main():
 	if len(p) >= 2:
 		funcls = []
 		ftarget = p[-1]
-		if os.path.isfile(ftarget):
+		if os.path.exists(ftarget):
 			p = p[0:len(p)-1]
 		else:
 			print(helpbanner)
