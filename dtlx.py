@@ -102,8 +102,8 @@ class patcher:
 			else:
 				self.signed = self.signed+"_sign.apk"
 			os.rename(self.compiled, self.signed)
-			# Delete Project if isclean = True
-			if self.isclean: os.system(f"rm -rf {self.fout}")
+		# Delete Project if isclean = True
+		if self.isclean: os.system(f"rm -rf {self.fout}")
 	def warning(self,content):
 		print(f"\x1b[1;41;93m{content}\x1b[0m")
 		__import__("time").sleep(0.1)
