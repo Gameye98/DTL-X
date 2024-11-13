@@ -70,7 +70,7 @@ If you are interested in reversing or patching Android applications, then I reco
 
 ### Installation
 ```bash
-apt install python git apktool apksigner openjdk-17
+apt install python git ncurses-utils apktool apksigner openjdk-17
 git clone https://github.com/Gameye98/DTL-X
 cd DTL-X
 # Btw you need to replace the old/regular aapt with the patched version
