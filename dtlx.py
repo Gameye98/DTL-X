@@ -496,6 +496,7 @@ class patcher:
 		print("✅ Success! The file has been generated.")
 		print(f"📂 Location: {outfile}")
 	def paidkw(self):
+		print(f"\x1b[1;41;93m[!] Total of {len(paidkeywords)} keywords loaded\x1b[0m")
 		self.searchkwresults = []
 		for f in self.smalidir:
 			f_ls = os.popen(f"find {f}/").read().splitlines()
@@ -681,7 +682,7 @@ kamusexit = (
 	("Landroid/app/Activity;->finishAndRemoveTask()V")
 )
 
-paidkeywords = {
+paidkeywords = [
 	"ContainsKey", "ad_removed", "adremoved", "already_vip", "alreadyvip",
 	"billingprocessor", "contains", "getpremium", "go_premium", "gopremium",
 	"is_premium", "is_pro", "is_purchased", "is_subscribed", "is_vip",
@@ -691,7 +692,10 @@ paidkeywords = {
 	"premium", "pro\"", "purchase", "purchaseType", "purchased",
 	"removed_ads", "subscribe", "subscribe_pro", "subscribed", "subscriberpro",
 	"unlocked", "vip", "vip_user", "vipuser",
-}
+]
+if os.path.isfile("keywords.txt"):
+	with open("keywords.txt","r") as f:
+		paidkeywords = [x.strip() for x in f.read().splitlines() if x.strip() != ""]
 
 neutralize = """.class public Lsec/blackhole/dtlx/Schadenfreude;
 .super Ljava/lang/Object;
