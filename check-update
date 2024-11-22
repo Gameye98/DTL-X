@@ -1,0 +1,14 @@
+#!/usr/bin/bash
+# Fetch the latest changes from the remote
+git fetch origin master
+
+# Check for updates
+LOCAL=$(git rev-parse HEAD)
+REMOTE=$(git rev-parse origin/master)
+
+if [ "$LOCAL" != "$REMOTE" ]; then
+    echo -e "\x1b[1;41;93mUpdates are available. Pulling latest changes...\x1b[0m"
+    git pull origin master
+else
+    echo -e "\x1b[1;92mRepository is already up-to-date.\x1b[0m"
+fi
