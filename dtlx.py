@@ -4,8 +4,11 @@ import random
 import hashlib
 import subprocess
 import readline
+import progressbar
 
 endl = "\012"
+civis = lambda: os.system("tput civis")
+cnorm = lambda: os.system("tput cnorm")
 
 def randomid():
 	randomstr = ""
@@ -443,7 +446,14 @@ class patcher:
 			while "" in f_ls: f_ls.remove("")
 			f_ls = list(map(lambda x: x.strip(), f_ls))
 			f_ls = list(filter(lambda x: os.path.isfile(x), f_ls))
+			totalpbar = len(f_ls)
+			countpbar = 0
+			print(f"\x1b[1;96m[*] Scan dirs: {f} ({totalpbar} files)\x1b[0m")
+			pbar = progressbar.ProgressBar(totalpbar).start()
+			civis()
 			for fx in f_ls:
+				countpbar += 1
+				pbar.update(countpbar)
 				with open(fx,"r") as smalifile:
 					lines = [x.strip() for x in smalifile.read().splitlines()]
 					classname = lines[0]
@@ -473,6 +483,8 @@ class patcher:
 									smaliobj.update({"method": methodname})
 									smaliobj.update({"code": line})
 									self.searchresults.append(smaliobj)
+			pbar.finish()
+			cnorm()
 		outfile = f"{self.fnm}_findstring_{randomid()}.txt"
 		with open(f"{self.fnm}_findstring_{randomid()}.txt", "w") as f:
 			for k, v in enumerate(self.searchresults):
@@ -504,8 +516,15 @@ class patcher:
 			while "" in f_ls: f_ls.remove("")
 			f_ls = list(map(lambda x: x.strip(), f_ls))
 			f_ls = list(filter(lambda x: os.path.isfile(x), f_ls))
+			totalpbar = len(f_ls)
+			countpbar = 0
+			print(f"\x1b[1;96m[*] Scan dirs: {f} ({totalpbar} files)\x1b[0m")
+			pbar = progressbar.ProgressBar(totalpbar).start()
+			civis()
 			for fx in f_ls:
-				print(f"\x1b[1;93m{fx}\x1b[0m")
+				countpbar += 1
+				pbar.update(countpbar)
+				#print(f"\x1b[1;93m{fx}\x1b[0m")
 				with open(fx,"r") as smalifile:
 					lines = [x.strip() for x in smalifile.read().splitlines()]
 					classname = lines[0]
@@ -536,6 +555,8 @@ class patcher:
 										smaliobj.update({"method": methodname})
 										smaliobj.update({"code": line})
 										self.searchkwresults.append(smaliobj)
+			pbar.finish()
+			cnorm()
 		outfile = f"{self.fnm}_paidkeywords_{randomid()}.txt"
 		with open(outfile, "w") as f:
 			for k, v in enumerate(self.searchkwresults):

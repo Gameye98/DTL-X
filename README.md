@@ -67,10 +67,12 @@ If you are interested in reversing or patching Android applications, then I reco
 • aapt & aapt2 (patched version, could be found on assets/)  
 • apksigner  
 • openjdk  
+• progressbar (python's library)  
 
 ### Installation
 ```bash
 apt install python git ncurses-utils apktool apksigner openjdk-17
+python -m pip install progressbar
 git clone https://github.com/Gameye98/DTL-X
 cd DTL-X
 # Btw you need to replace the old/regular aapt with the patched version
