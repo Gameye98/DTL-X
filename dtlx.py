@@ -504,6 +504,7 @@ class patcher:
 			f_ls = list(map(lambda x: x.strip(), f_ls))
 			f_ls = list(filter(lambda x: os.path.isfile(x), f_ls))
 			for fx in f_ls:
+				print(f"\x1b[1;93m{fx}\x1b[0m")
 				with open(fx,"r") as smalifile:
 					lines = [x.strip() for x in smalifile.read().splitlines()]
 					classname = lines[0]
