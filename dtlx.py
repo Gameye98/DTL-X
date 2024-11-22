@@ -517,7 +517,8 @@ class patcher:
 							ismethod = False
 						else:
 							for keyword in paidkeywords:
-								if keyword in line:
+								kwsplit = keyword.split("|") if "|" in keyword else [keyword]
+								if all(kwsx in line.lower() for kwsx in kwsplit):
 									if line.startswith(".field"):
 										smaliobj = {}
 										smaliobj.update({"class": classname})
