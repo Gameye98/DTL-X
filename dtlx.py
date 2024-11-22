@@ -497,6 +497,7 @@ class patcher:
 		print(f"📂 Location: {outfile}")
 	def paidkw(self):
 		print(f"\x1b[1;41;93m[!] Total of {len(paidkeywords)} keywords loaded\x1b[0m")
+		kwsplit = [keyword.split("|") if "|" in keyword else [keyword] for keyword in paidkeywords]
 		self.searchkwresults = []
 		for f in self.smalidir:
 			f_ls = os.popen(f"find {f}/").read().splitlines()
@@ -517,9 +518,8 @@ class patcher:
 						elif line.startswith(".end method"):
 							ismethod = False
 						else:
-							for keyword in paidkeywords:
-								kwsplit = keyword.split("|") if "|" in keyword else [keyword]
-								if all(kwsx in line.lower() for kwsx in kwsplit):
+							for keyword in kwsplit:
+								if all(kwsx in line.lower() for kwsx in keyword):
 									if line.startswith(".field"):
 										smaliobj = {}
 										smaliobj.update({"class": classname})
