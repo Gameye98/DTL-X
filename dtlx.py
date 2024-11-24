@@ -840,11 +840,18 @@ class patcher:
 					self.patchstdout(line)
 		delete_recursively(self.tmp_patchdir)
 		os.chdir(self.tmp_dexdir)
-		os.system(f"zip -r {self.fin}.patch.apk .")
-		os.rename(f"{self.fin}.patch.apk",os.getenv("PWD")+f"/{self.fin}.patch.apk")
+		outpatchfile = f"{self.fnm}.patch.apk"
+		os.system(f"zip -r {outpatchfile} .")
+		os.rename(f"{outpatchfile}",os.getenv("PWD")+f"/{outpatchfile}")
 		os.chdir("..")
 		delete_recursively(self.tmp_dexdir)
-		print(f"📂 Location: {self.fin}.patch.apk")
+		print("\x1b[1;92m[+] Signing PATCHED APK file... \x1b[0m",end="")
+		os.system(f"apksigner sign --ks assets/user.keystore --ks-key-alias user --ks-pass pass:12345678 {outpatchfile}")
+		print("\x1b[1;92mOK\x1b[0m")
+		print("\x1b[1;92m[+] Verifying PATCHED APK file.... \x1b[0m",end="")
+		os.system(f"apksigner verify {outpatchfile}")
+		print("\x1b[1;92mOK\x1b[0m")
+		print(f"📂 Location: {outpatchfile}")
 	def patchstdout(self,text):
 		if text.strip().startswith("*"):
 			print(f"\x1b[1;93m{text}\x1b[0m")
