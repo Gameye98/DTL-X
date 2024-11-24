@@ -12,8 +12,7 @@ mypatch/
 ```
 
 * Supported text colors (default theme):
-<img src="patch_text_colors.png" style="width:80px;height:90px;">
-![Text Colors](patch_text_colors.png)
+<img src="patch_text_colors.png" style="width:40%;height:50%;">
 
 * List of blocks supported in DTL-X
 ```patch
