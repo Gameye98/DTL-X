@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import os, sys, re
-import random
-import hashlib
+import random, json
+import hashlib, glob
 import subprocess
 import readline
 import progressbar
@@ -16,14 +16,33 @@ def randomid():
 		randomstr += str(random.choice(list(range(0,10))))
 	return randomstr
 
+def delete_recursively(path):
+    if os.path.exists(path):
+        if os.path.isdir(path):
+            for i in glob.iglob(path+"/**", include_hidden=True):
+                delete_recursively(i)
+        if os.path.isdir(path):
+            os.rmdir(path)
+            print(f"\x1b[1;93mdelete folder '{path}'\x1b[0m")
+        else:
+            os.remove(path)
+            print(f"\x1b[1;94mdelete file '{path}'\x1b[0m")
+
+def check_class(dexfile, classname):
+	data = os.popen(f"dexdump -d {dexfile} | grep -A 1000 \"{classname}\"").read()
+	if data.strip() == "":
+		return None
+	return data
+
 class patcher:
-	def __init__(self, fin, args):
+	def __init__(self, fin, args,patchfile=None):
 		self.endl = "\012"
 		self.isneutralize = False
 		self.ismodified = False
 		self.isclean = False
 		self.iscompile = True
 		self.fin = fin
+		self.patchfile = patchfile
 		#if not os.path.isfile(self.fin):
 			#raise FileNotFoundError(f"{self.fin}: No such file or directory")
 		self.isproject = False
@@ -81,6 +100,8 @@ class patcher:
 			elif args_iter=="findstr":self.findstr()
 			elif args_iter=="paidkw":self.paidkw()
 			elif args_iter=="nocompile":self.iscompile=False
+			elif args_iter=="patch":
+				self.patchApp()
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -579,6 +600,268 @@ class patcher:
 				print(f"\x1b[1;41;93m{codetext}\x1b[0m\n")
 		print("✅ Success! The file has been generated.")
 		print(f"📂 Location: {outfile}")
+	def patchApp(self):
+		self.tmp_patchdir = os.getenv("PWD")+"/"+randomid()
+		os.system(f"unzip -d {self.tmp_patchdir} {self.patchfile}")
+		self.tmp_dexdir = os.getenv("PWD")+"/"+randomid()
+		os.system(f"unzip -d {self.tmp_dexdir} {self.fin}")
+		ls = os.listdir(self.tmp_patchdir)
+		if not "patch.txt" in ls:
+			print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No patch.txt found\x1b[0m")
+			return
+		with open(self.tmp_patchdir+"/patch.txt") as f:
+			content = f.read().splitlines()
+			content = list(map(lambda x: x.strip(), content))
+			content = list(filter(lambda x: x != "", content))
+			isbegin = False
+			isend = False
+			isclasses = False
+			isaddfile = False
+			isdelfile = False
+			isdelfolder = False
+			isrenfile = False
+			ispatchlib = False
+			ismodify = False
+			modifyfile = ""
+			modifymatch = ""
+			modifyreplace = ""
+			srcfile = None
+			dstfile = None
+			bakfile = None
+			for line in content:
+				if line == "[BEGIN]":
+					isbegin = True
+				elif line == "[END]":
+					isend = True
+					isbegin = False
+				elif isbegin:
+					if line == "[ADD_FILE]":
+						isaddfile = True
+						isclasses = False
+						isdelfile = False
+						isdelfolder = False
+						isrenfile = False
+						ispatchlib = False
+						ismodify = False
+						srcfile = None
+						dstfile = None
+						bakfile = None
+					elif line == "[DELETE_FILE_IN_APK]":
+						isaddfile = False
+						isclasses = False
+						isdelfile = True
+						isdelfolder = False
+						isrenfile = False
+						ispatchlib = False
+						ismodify = False
+						srcfile = None
+						dstfile = None
+						bakfile = None
+					elif line == "[DELETE_FOLDER_IN_APK]":
+						isaddfile = False
+						isclasses = False
+						isdelfile = False
+						isdelfolder = True
+						isrenfile = False
+						ispatchlib = False
+						ismodify = False
+						srcfile = None
+						dstfile = None
+						bakfile = None
+					elif line == "[RENAME_FILE_IN_APK]":
+						isaddfile = False
+						isclasses = False
+						isdelfile = False
+						isdelfolder = False
+						isrenfile = True
+						ispatchlib = False
+						ismodify = False
+						srcfile = None
+						dstfile = None
+						bakfile = None
+					elif line == "[CLASSES]":
+						isaddfile = False
+						isclasses = True
+						isdelfile = False
+						isdelfolder = False
+						isrenfile = False
+						ispatchlib = False
+						ismodify = False
+						srcfile = None
+						dstfile = None
+						bakfile = None
+					elif line == "[PATCHLIB]":
+						isaddfile = False
+						isclasses = False
+						isdelfile = False
+						isdelfolder = False
+						isrenfile = False
+						ispatchlib = True
+						ismodify = False
+						srcfile = None
+						dstfile = None
+						bakfile = None
+					elif line == "[MODIFY]":
+						isaddfile = False
+						isclasses = False
+						isdelfile = False
+						isdelfolder = False
+						isrenfile = False
+						ispatchlib = False
+						ismodify = True
+						srcfile = None
+						dstfile = None
+						bakfile = None
+					elif isaddfile:
+						if all(char in line for char in ["{",":"]):
+							try:
+								data = json.loads(line)
+								if not all([srcfile, dstfile]):
+									if "file_name" in data:
+										srcfile = data["file_name"]
+										srcfile = self.tmp_patchdir+"/"+srcfile if srcfile.strip() != "" else None
+									elif "to" in data:
+										dstfile = data["to"]
+										dstfile = self.tmp_dexdir+"/"+dstfile if dstfile.strip() != "" else None
+								if all([srcfile, dstfile]):
+									shutil.copy(srcfile, dstfile)
+							except json.decoder.JSONDecodeError as e:
+								print(f"\x1b[1;41;93m[!] dtlx: '{self.tmp_patchdir}/patch.txt': {e}\x1b[0m")
+						else:
+							self.patchstdout(line)
+					elif isdelfile:
+						if all(char in line for char in ["{",":"]):
+							try:
+								data = json.loads(line)
+								if "file_name" in data:
+									srcfile = data["file_name"]
+									srcfile = self.tmp_dexdir+"/"+srcfile if srcfile.strip() != "" else None
+								if srcfile:
+									delete_recursively(srcfile)
+							except json.decoder.JSONDecodeError as e:
+								print(f"\x1b[1;41;93m[!] dtlx: '{self.tmp_patchdir}/patch.txt': {e}\x1b[0m")
+						else:
+							self.patchstdout(line)
+					elif isdelfolder:
+						if all(char in line for char in ["{",":"]):
+							try:
+								data = json.loads(line)
+								if "folder_name" in data:
+									srcfile = data["folder_name"]
+									srcfile = self.tmp_dexdir+"/"+srcfile if srcfile.strip() != "" else None
+								if srcfile:
+									delete_recursively(srcfile)
+							except json.decoder.JSONDecodeError as e:
+								print(f"\x1b[1;41;93m[!] dtlx: '{self.tmp_patchdir}/patch.txt': {e}\x1b[0m")
+						else:
+							self.patchstdout(line)
+					elif isrenfile:
+						if all(char in line for char in ["{",":"]):
+							try:
+								data = json.loads(line)
+								if not all([srcfile, dstfile]):
+									if "file_name" in data:
+										srcfile = data["file_name"]
+										srcfile = self.tmp_dexdir+"/"+srcfile if srcfile.strip() != "" else None
+									elif "to" in data:
+										dstfile = data["to"]
+										dstfile = self.tmp_dexdir+"/"+dstfile if dstfile.strip() != "" else None
+								if all([srcfile, dstfile]):
+									os.rename(srcfile, dstfile)
+							except json.decoder.JSONDecodeError as e:
+								print(f"\x1b[1;41;93m[!] dtlx: '{self.tmp_patchdir}/patch.txt': {e}\x1b[0m")
+						else:
+							self.patchstdout(line)
+					elif isclasses:
+						if all(char in line for char in ["{",":"]):
+							try:
+								data = json.loads(line)
+								if not all([srcfile, dstfile]):
+									if "class_name" in data:
+										srcfile = data["class_name"]
+										srcfile = srcfile if srcfile.strip() != "" else None
+									elif "replaced" in data:
+										dstfile = data["replaced"]
+										dstfile = dstfile if dstfile.strip() != "" else None
+								if all([srcfile, dstfile]):
+									replaced = bytes.fromhex(dstfile.replace(" ",""))
+									for dex in glob.iglob(self.tmp_dexdir+"/*.dex"):
+										dexname = dex.split("/")[-1] if "/" in dex else dex
+										classdata = check_class(dex, srcfile)
+										offset = None
+										if classdata:
+											classdata = classdata.splitlines()
+											classdata = list(map(lambda x: x.strip(), classdata))
+											classdata = list(filter(lambda x: "|" in x, classdata))
+											if len(classdata) < 2:
+												continue
+											offset = classdata[1]
+											if not ":" in offset:
+												continue
+											offset = offset.strip().split(":")[0]
+										if offset:
+											with open(dex,"r+b") as bwrite:
+												bwrite.seek(int(offset, 16))
+												bwrite.write(replaced)
+											self.patchstdout(f"write {replaced} to {dexname} @ {offset}")
+							except json.decoder.JSONDecodeError as e:
+								print(f"\x1b[1;41;93m[!] dtlx: '{self.tmp_patchdir}/patch.txt': {e}\x1b[0m")
+						else:
+							self.patchstdout(line)
+					elif ispatchlib:
+						if all(char in line for char in ["{",":"]):
+							try:
+								data = json.loads(line)
+								if not all([srcfile, dstfile]):
+									if "file_name" in data:
+										srcfile = data["file_name"]
+										srcfile = self.tmp_dexdir+"/"+srcfile if srcfile.strip() != "" else None
+									elif "replaced" in data:
+										dstfile = data["replaced"]
+										dstfile = dstfile if dstfile.strip() != "" else None
+									elif "offset" in data:
+										bakfile = data["offset"]
+										bakfile = bakfile if bakfile.strip() != "" else None
+								if all([srcfile, dstfile, bakfile]):
+									replaced = bytes.fromhex(dstfile.replace(" ",""))
+									for dex in glob.iglob(self.tmp_dexdir+"/*.dex"):
+										dexname = dex.split("/")[-1] if "/" in dex else dex
+										classdata = check_class(dex, srcfile)
+										offset = int(bakfile, 16)
+										with open(dex,"r+b") as bwrite:
+											bwrite.seek(offset)
+											bwrite.write(replaced)
+										self.patchstdout(f"write {replaced} to {dexname} @ {offset}")
+							except json.decoder.JSONDecodeError as e:
+								print(f"\x1b[1;41;93m[!] dtlx: '{self.tmp_patchdir}/patch.txt': {e}\x1b[0m")
+						else:
+							self.patchstdout(line)
+				else:
+					self.patchstdout(line)
+		delete_recursively(self.tmp_patchdir)
+		os.chdir(self.tmp_dexdir)
+		os.system(f"zip -r {self.fin}.patch.apk .")
+		os.rename(f"{self.fin}.patch.apk",os.getenv("PWD")+f"/{self.fin}.patch.apk")
+		os.chdir("..")
+		delete_recursively(self.tmp_dexdir)
+		print(f"📂 Location: {self.fin}.patch.apk")
+	def patchstdout(self,text):
+		if text.strip().startswith("*"):
+			print(f"\x1b[1;93m{text}\x1b[0m")
+		elif text.strip().startswith("#"):
+			print(f"\x1b[1;94m{text}\x1b[0m")
+		elif text.strip().startswith("?"):
+			print(f"\x1b[1;95m{text}\x1b[0m")
+		elif text.strip().startswith("&"):
+			print(f"\x1b[1;96m{text}\x1b[0m")
+		elif text.strip().startswith("~"):
+			print(f"\x1b[1;97m{text}\x1b[0m")
+		elif text.strip().startswith("@"):
+			print(f"\x1b[1;91m{text}\x1b[0m")
+		elif text.strip().startswith("!"):
+			print(f"\x1b[1;41;93m{text}\x1b[0m")
+		else:
+			print(f"\x1b[1;92m{text}\x1b[0m")
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -815,7 +1098,13 @@ def main():
 		else:
 			print(helpbanner)
 			return None
+		patchfile = ""
+		ispatch = False
 		for px in p:
+			if ispatch:
+				patchfile = px
+				ispatch = False
+				continue
 			if px == "--rmads1":
 				funcls.append("rmads1")
 			elif px == "--rmads2":
@@ -848,7 +1137,17 @@ def main():
 				funcls.append("paidkw")
 			elif px == "--noc":
 				funcls.append("nocompile")
-		patcher(ftarget,funcls)
+			elif px == "--patch":
+				funcls.append("patch")
+				ispatch = True
+		if not os.path.isfile(patchfile):
+			print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
+			sys.exit()
+		with open(patchfile,"rb") as f:
+			if f.read()[0:4] != b"PK\x03\x04":
+				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': Patch file should be a ZIP contains (patch.txt, etc)\x1b[0m")
+				sys.exit()
+		patcher(ftarget,funcls,patchfile=patchfile)
 
 if __name__ == "__main__":
 	if len(sys.argv) >= 2:

@@ -68,10 +68,12 @@ If you are interested in reversing or patching Android applications, then I reco
 • apksigner  
 • openjdk  
 • progressbar (python's library)  
+• unzip  
+• zip  
 
 ### Installation
 ```bash
-apt install python git ncurses-utils apktool apksigner openjdk-17
+apt install python git ncurses-utils apktool apksigner openjdk-17 unzip zip
 python -m pip install progressbar
 git clone https://github.com/Gameye98/DTL-X
 cd DTL-X
