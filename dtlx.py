@@ -1147,13 +1147,14 @@ def main():
 			elif px == "--patch":
 				funcls.append("patch")
 				ispatch = True
-		if not os.path.isfile(patchfile):
-			print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
-			sys.exit()
-		with open(patchfile,"rb") as f:
-			if f.read()[0:4] != b"PK\x03\x04":
-				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': Patch file should be a ZIP contains (patch.txt, etc)\x1b[0m")
+		if ispatch:
+			if not os.path.isfile(patchfile):
+				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
 				sys.exit()
+			with open(patchfile,"rb") as f:
+				if f.read()[0:4] != b"PK\x03\x04":
+					print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': Patch file should be a ZIP contains (patch.txt, etc)\x1b[0m")
+					sys.exit()
 		patcher(ftarget,funcls,patchfile=patchfile)
 
 if __name__ == "__main__":
