@@ -850,6 +850,7 @@ class patcher:
 		print("\x1b[1;92mOK\x1b[0m")
 		print("\x1b[1;92m[+] Verifying PATCHED APK file.... \x1b[0m",end="")
 		os.system(f"apksigner verify {outpatchfile}")
+		print("\x1b[1;41;93m[!] remember to repair the modified dex in patched APK\x1b[0m")
 		print("\x1b[1;92mOK\x1b[0m")
 		print(f"📂 Location: {outpatchfile}")
 	def patchstdout(self,text):

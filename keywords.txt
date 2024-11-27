@@ -4,7 +4,9 @@ ad|remov
 benefit
 bonus
 buy
+bought
 credit
+customer
 discount
 donate
 elite
@@ -23,6 +25,7 @@ no|ads
 no|limit
 offer
 paid
+pay
 plan
 plus|user
 premium
