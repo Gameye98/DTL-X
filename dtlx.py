@@ -9,6 +9,7 @@ import progressbar
 endl = "\012"
 civis = lambda: os.system("tput civis")
 cnorm = lambda: os.system("tput cnorm")
+cols = lambda: int(os.popen("tput cols").read().strip())
 
 def randomid():
 	randomstr = ""
@@ -78,8 +79,17 @@ class patcher:
 			## Fixing bug where the manifest copy content itself many times
 			#if len(self.manifestxml.split("</manifest>")) > 1:
 				#self.manifestxml = self.manifestxml.split("</manifest>")[0]+"</manifest>"
-		self.smalidir = list(filter(lambda x: x.startswith("smali"), os.listdir(self.fout)))
-		self.smalidir = list(map(lambda x: self.fout+"/"+x, self.smalidir))
+		# decom_ng
+		# 0 -> apktool
+		# 1 -> apkeditor
+		self.decom_ng = 1
+		if os.path.isfile(f"{self.fout}/archive-info.json") and os.path.isdir(f"{self.fout}/smali/classes"):
+			self.decom_ng = 1
+			self.smalidir = list(glob.iglob(f"{self.fout}/smali/*"))
+		else:
+			self.decom_ng = 0
+			self.smalidir = list(filter(lambda x: x.startswith("smali"), os.listdir(self.fout)))
+			self.smalidir = list(map(lambda x: self.fout+"/"+x, self.smalidir))
 		self.args = args
 		for args_iter in self.args:
 			# Switch Operator
@@ -100,8 +110,8 @@ class patcher:
 			elif args_iter=="findstr":self.findstr()
 			elif args_iter=="paidkw":self.paidkw()
 			elif args_iter=="nocompile":self.iscompile=False
-			elif args_iter=="patch":
-				self.patchApp()
+			elif args_iter=="patch":self.patchApp()
+			elif args_iter=="rmpairip":self.removePairip()
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -140,9 +150,16 @@ class patcher:
 		open(self.fout+"/AndroidManifest.xml","w").write(self.manifestxml)
 	def writeNeutralize(self):
 		if not self.isneutralize:
-			os.system(f"mkdir -p {self.fout}/smali/sec/blackhole/dtlx")
-			open(self.fout+"/smali/sec/blackhole/dtlx/Schadenfreude.smali","w").write(neutralize)
-			self.isneutralize = True
+			if self.decom_ng == 0:
+				os.system(f"mkdir -p {self.fout}/smali/sec/blackhole/dtlx")
+				with open(self.fout+"/smali/sec/blackhole/dtlx/Schadenfreude.smali","w") as f:
+					f.write(neutralize)
+					self.isneutralize = True
+			elif self.decom_ng == 1:
+				os.system(f"mkdir -p {self.fout}/smali/classes/sec/blackhole/dtlx")
+				with open(self.fout+"/smali/classes/sec/blackhole/dtlx/Schadenfreude.smali","w") as f:
+					f.write(neutralize)
+					self.isneutralize = True
 	def removeAds1(self):
 		self.gms_ad = [x for x in self.manifestxml.split(self.endl) if x.strip().startswith("<activity") and "com.google.android.gms.ad" in x and x.strip().endswith(">")]
 		for gmsx in self.gms_ad:
@@ -870,6 +887,62 @@ class patcher:
 			print(f"\x1b[1;41;93m{text}\x1b[0m")
 		else:
 			print(f"\x1b[1;92m{text}\x1b[0m")
+	def removePairip(self):
+		print("\x1b[1;92m[+] Remove Pairip\x1b[0m")
+		civis()
+		for f in self.smalidir:
+			f_ls = list(glob.iglob(f"{f}/**/*.smali", recursive=True))
+			totalpbar = len(f_ls)
+			print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
+			counter = 0
+			pbar = progressbar.ProgressBar(totalpbar).start()
+			for file in f_ls:
+				counter += 1
+				pbar.update(counter)
+				smalicodes = open(file,"r").read()
+				for regex in regex_for_pairip:
+					reg = re.findall(regex[0],smalicodes)
+					if len(reg) > 0:
+						regtext = f"\x1b[1;94m[*] regex: {regex[0]}\x1b[0m"
+						if len(regtext) < cols():
+							print(regtext+" "*(cols()-len(regtext)))
+						print(f"\x1b[1;92m[+] found: {file}\x1b[0m")
+						smalicodes = re.sub(regex[0],regex[1],smalicodes)
+						print(f"\x1b[1;41;93m[!] result: {reg[0]}\x1b[0m")
+						print(f"\x1b[1;93m[~] replacement: '{regex[1]}'\x1b[0m\n")
+						print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
+				with open(file,"w") as sw:
+					sw.write(smalicodes)
+			pbar.finish()
+			cnorm()
+		# change the class back to the default
+		pairip_application = list(glob.iglob(f"{self.fout}/smali/**/com/pairip/application/Application.smali"))
+		if len(pairip_application) == 0:
+			print(f"\x1b[1;41;93m[!] dtlx: 'com.pairip.application.Application' is not detected\x1b[0m")
+			return
+		pairip_application = open(pairip_application[0],"r").read().splitlines()
+		pairip_application = list(map(lambda x: x.strip(), pairip_application))
+		while "" in pairip_application: pairip_application.remove("")
+		classname = list(filter(lambda x: x.startswith(".super"), pairip_application))[0]
+		classname = classname.split()[1][1:]
+		while classname.endswith(";"):
+			classname = classname[0:len(classname)-1]
+		classname = classname.replace("/",".")
+		manifest = open(self.fout+"/AndroidManifest.xml","r").read()
+		reg = re.findall(r'".*pairip.*"', manifest)
+		for m in reg:
+			print(f"\x1b[1;92m[+] update AndroidManifest.xml ({m} => \"{classname}\")\x1b[0m")
+			manifest = manifest.replace(m, f"\"{classname}\"")
+		with open(f"{self.fout}/AndroidManifest.xml","w") as f:
+			f.write(manifest)
+		# remove pairip classes from dex
+		for f in glob.iglob(f"{self.fout}/smali/**/com/pairip",recursive=True):
+			delete_recursively(f)
+		# remove pairip shared object library
+		for f in glob.iglob(f"{self.fout}/**/lib/**/libpairipcore.so",recursive=True):
+			print(f"\x1b[1;92m[+] remove {f}\x1b[0m")
+			os.remove(f)
+		self.writeNeutralize()
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -892,6 +965,7 @@ helpbanner = """     __ __   __
 --findstring: Find string / Search Text
 --paidkw: Search for InApp Purchased of Pro/Premium Features
 --noc: No compile/build the working project
+--rmpairip: Remove Google Pairip Protection (Old Method)
 """
 
 mainbanner = """                                                  
@@ -909,6 +983,36 @@ mainbanner = """
 \x1b[1;41;93mAPK REVERSER & PATCHER - author by Gameye98 (BHSec)\x1b[0m
 """
 
+regex_for_pairip = [
+		[
+			r'(# direct methods\n.method public static )appkiller\(\)V([\s\S]*?.end method)[\w\W]*',
+			r'\1constructor <clinit>()V\2',
+		],
+		[
+			r'sget-object.*\s+.*const-string v1,(.*\s+).*.line.*\n+.+.*\n.*invoke-static \{v0\}, Lmt/Objectlogger;->logstring\(Ljava/lang/Object;\)V',
+			r'const-string v0,\1'
+		],
+		[
+			r'invoke-static \{\}, .*;->callobjects\(\)V\n',
+			r''
+		],
+		[
+			r'(\.method public.*onReceive\(Landroid/content/Context;Landroid/content/Intent;\)V\n    \.registers) .[\s\S]*const-string/jumbo.*\s+.*\s+.*\s+(return-void)',
+			r'\1 3\n    \2'
+		],
+		[
+			r'.*invoke.*pairip.*\)Ljava/lang/Object;.*',
+			r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Ljava/lang/Object;'
+		],
+		[
+			r'.*invoke.*pairip.*\)V.*',
+			r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()V'
+		],
+		[
+			r'.*invoke.*pairip.*\)Z.*',
+			r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z'
+		]
+]
 strmatch = {
 	"adloader": (
 		"loadAd",
@@ -1082,6 +1186,16 @@ neutralize = """.class public Lsec/blackhole/dtlx/Schadenfreude;
     const/4 v0, 0x0
     return v0
 .end method
+
+.method public static neutralize()Ljava/lang/Object;
+    .locals 1
+    # Create a new Object instance
+    new-instance v0, Ljava/lang/Object;
+    # Call the constructor of Object
+    invoke-direct {v0}, Ljava/lang/Object;-><init>()V
+    # Return the instance
+    return-object v0
+.end method
 """
 
 def system(cmd):
@@ -1148,6 +1262,8 @@ def main():
 			elif px == "--patch":
 				funcls.append("patch")
 				ispatch = True
+			elif px == "--rmpairip":
+				funcls.append("rmpairip")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
