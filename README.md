@@ -49,6 +49,7 @@ If you are interested in reversing or patching Android applications, then I reco
 --findstring: Find string / Search Text  
 --paidkw: Search for InApp Purchased of Pro/Premium Features  
 --noc: No Compile
+--rmpairip: Remove Google Pairip Protection (Old Method)
 
 **• note 1: remove any whitespace found on the apk file name before patching**  
 **• note 2: you can use multiple method in a single run:**  
