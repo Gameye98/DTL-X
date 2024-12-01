@@ -2,14 +2,16 @@
 import os, sys, re
 import random, json
 import hashlib, glob
+import shutil
 import subprocess
-import readline
+import readline, copy
 import progressbar
 
 endl = "\012"
 civis = lambda: os.system("tput civis")
 cnorm = lambda: os.system("tput cnorm")
 cols = lambda: int(os.popen("tput cols").read().strip())
+loading = ["|","/","-","\\"]
 
 def randomid():
 	randomstr = ""
@@ -18,16 +20,16 @@ def randomid():
 	return randomstr
 
 def delete_recursively(path):
-    if os.path.exists(path):
-        if os.path.isdir(path):
-            for i in glob.iglob(path+"/**", include_hidden=True):
-                delete_recursively(i)
-        if os.path.isdir(path):
-            os.rmdir(path)
-            print(f"\x1b[1;93mdelete folder '{path}'\x1b[0m")
-        else:
-            os.remove(path)
-            print(f"\x1b[1;94mdelete file '{path}'\x1b[0m")
+	if os.path.exists(path):
+		if os.path.isdir(path):
+			for i in glob.iglob(path+"/**", include_hidden=True):
+				delete_recursively(i)
+		if os.path.isdir(path):
+			os.rmdir(path)
+			print(f"\x1b[1;93mdelete folder '{path}'\x1b[0m")
+		else:
+			os.remove(path)
+			print(f"\x1b[1;94mdelete file '{path}'\x1b[0m")
 
 def check_class(dexfile, classname):
 	data = os.popen(f"dexdump -d {dexfile} | grep -A 1000 \"{classname}\"").read()
@@ -363,74 +365,89 @@ class patcher:
 	def removeSetsecure(self):
 		print("Still working on")
 	def removeTrackers(self):
-		for tracksx in trackers:
-			self.warning(tracksx[0]+": "+tracksx[2])
-			self.removeClass(tracksx[1])
-	def removeClass(self, class_name):
+		self.removeClass(trackers, scan_type=1)
+	def removeClass(self, class_list, scan_type=0):
+		# scan type:
+		#   0 - default, which is normal
+		#   1 - trackers
 		# Delete class com.crashlytics.android
+		class_orig = copy.deepcopy(class_list)
+		if scan_type == 1:
+			class_list = list(map(lambda x: x[1], class_list))
 		for smalixdir in self.smalidir:
-			if os.path.isdir(smalixdir+"/"+class_name.replace(".","/")):
-				self.warning(smalixdir+"/"+class_name.replace(".","/"))
-				os.system(f"rm -rf {smalixdir}/"+class_name.replace(".","/"))
+			for class_name in class_list:
+				if os.path.isdir(smalixdir+"/"+class_name.replace(".","/")):
+					os.system(f"rm -rf {smalixdir}/"+class_name.replace(".","/"))
+		# check AndroidManifest.xml
+		manifestxml = open(f"{self.fout}/AndroidManifest.xml","r").read()
+		class_xml = []
+		for class_name in class_list:
+			if class_name in manifestxml:
+				class_xml.append(class_name)
+		class_list = copy.deepcopy(class_xml)
+		if len(class_list) == 0:
+			print("\x1b[1;93mNo known trackers detected\x1b[0m")
+		else:
+			print("\x1b[1;92mDetected:\x1b[0m")
+			for class_name in class_list:
+				print(f"\x1b[1;92m ✓ {class_name}\x1b[0m")
+		# new class_list with regex
+		class_reg = []
+		opcodes = ["move-result", "new-instance", "iget", "iput", "const-string"]
+		for class_name in class_list:
+			class_name = re.escape(class_name)
+			class_reg.append([
+				rf'.*invoke.*{class_name}.*\)Z',
+				'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Ljava/lang/Object;'
+			])
+			class_reg.append([
+				rf'.*invoke.*{class_name}.*\)V',
+				'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()V'
+			])
+			class_reg.append([
+				rf'.*invoke.*{class_name}.*\)Ljava/lang/Object;',
+				'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z'
+			])
+			for opcode in opcodes:
+				opcode = re.escape(opcode)
+				class_reg.append([rf'.*{opcode}.*{class_name}.*',""])
+		civis()
 		for smalixdir in self.smalidir:
-			self.f_ls = subprocess.run(f"find {smalixdir}/",shell=True,check=True,stdout=subprocess.PIPE).stdout.decode().split(self.endl)
-			self.f_ls = list(filter(lambda x: not x.startswith(".") and x.strip() != "", self.f_ls))
-			self.f_ls = list(filter(lambda x: x.endswith(""), self.f_ls))
-			self.f_ls = list(filter(lambda x: os.path.isfile(x), self.f_ls))
+			self.f_ls = list(glob.iglob(f"{smalixdir}/**/*.smali",recursive=True))
+			totalpbar = len(self.f_ls)
+			#print(f"\x1b[1;96m[*] scan dirs: {smalixdir} ({totalpbar} files)\x1b[0m")
+			#print(f"\x1b[1;96m[*] scan dirs: {smalixdir} ({totalpbar} files)\x1b[0m")
+			counter = 0
+			ldc = 0
+			#pbar = progressbar.ProgressBar(totalpbar).start()
+			#self.f_ls = list(filter(lambda x: not x.startswith(".") and x.strip() != "", self.f_ls))
+			#self.f_ls = list(filter(lambda x: x.endswith(""), self.f_ls))
+			#self.f_ls = list(filter(lambda x: os.path.isfile(x), self.f_ls))
 			# Clean smali code that execute operations pertain to $class_name
-			for fx in self.f_ls:
-				self.ffx = open(fx,"r").read()
-				self.readperline = self.ffx.strip().split(endl)
-				while "" in self.readperline:
-					self.readperline.remove("")
-				self.modifiedsourcefile = ""
-				isgetobj = False
-				for rpl_iterx in self.readperline:
-					rplix = rpl_iterx.strip()
-					if class_name.replace(".","/") in rpl_iterx or class_name in rpl_iterx:
-						if rplix.startswith("invoke"):
-							if rpl_iterx.strip().endswith(")V"):
-								print("*"*int(system("tput cols")))
-								self.success(f"[+] Patch (invoke~()V): {fx}")
-								self.warning(rpl_iterx)
-								rpl_iterx = rpl_iterx.replace(rplix,"invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()V")
-								self.success(rpl_iterx)
-							elif rpl_iterx.strip().endswith(")Z"):
-								print("*"*int(system("tput cols")))
-								self.success(f"[+] Patch (invoke~()Z): {fx}")
-								self.warning(rpl_iterx)
-								rpl_iterx = rpl_iterx.replace(rplix,"invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z")
-								self.success(rpl_iterx)
-						elif rplix.startswith("move-result") and isgetobj:
-							print(f"\x1b[1;92m[+] Patch (new-instance): {fx}... \x1b[0m")
-							self.warning(rpl_iterx)
-							rpl_iterx = rpl_iterx.replace(rplix,"")
-							isgetobj = False
-						elif rplix.startswith("new-instance"):
-							print(f"\x1b[1;92m[+] Patch (new-instance): {fx}... \x1b[0m")
-							self.warning(rpl_iterx)
-							rpl_iterx = rpl_iterx.replace(rplix,"")
-							isgetobj = True
-						elif rplix.startswith("iget"):
-							print(f"\x1b[1;92m[+] Patch (iget): {fx}... \x1b[0m")
-							self.warning(rpl_iterx)
-							rpl_iterx = rpl_iterx.replace(rplix,"")
-						elif rplix.startswith("iput"):
-							print(f"\x1b[1;92m[+] Patch (iput): {fx}... \x1b[0m")
-							self.warning(rpl_iterx)
-							rpl_iterx = rpl_iterx.replace(rplix,"")
-						self.modifiedsourcefile += rpl_iterx+endl
-					elif rplix.startswith("const-string") and "\"crashlytics" in rplix.lower():
-						print(f"\x1b[1;92m[+] Patch (const-string): {fx}... \x1b[0m")
-						self.warning(rpl_iterx)
-						constvar = rplix.split(",")[0]
-						rpl_iterx = rpl_iterx.replace(rplix,f"{constvar}, \"null\"")
-						self.modifiedsourcefile += rpl_iterx+endl
-					else:
-						self.modifiedsourcefile += rpl_iterx+endl
-				open(fx,"w").write(self.modifiedsourcefile)
-				self.ismodified = True
-		if self.ismodified: self.writeNeutralize()
+			for file in self.f_ls:
+				counter += 1
+				print(f"\r\x1b[1;93m[{loading[ldc]}] scan dirs: {smalixdir} ({counter}/{totalpbar} files)\x1b[0m   ",end="")
+				sys.stdout.flush()
+				ldc += 1
+				if ldc >= len(loading):
+					ldc = 0
+				smalicodes = open(file,"r").read()
+				for regex in class_reg:
+					reg = re.findall(regex[0],smalicodes)
+					if len(reg) > 0:
+						regtext = f"\x1b[1;94m[*] regex: {regex[0]}\x1b[0m"
+						if len(regtext) < cols():
+							print(regtext+" "*(cols()-len(regtext)))
+						print(f"\x1b[1;92m[+] found: {file}\x1b[0m")
+						smalicodes = re.sub(regex[0],regex[1],smalicodes)
+						print(f"\x1b[1;41;93m[!] result: {reg[0]}\x1b[0m")
+						print(f"\x1b[1;93m[~] replacement: '{regex[1]}'\x1b[0m\n")
+						print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
+				with open(file,"w") as sw:
+					sw.write(smalicodes)
+			#pbar.finish()
+			#cnorm()
+		self.writeNeutralize()
 		# Remove leftover from AndroidManifest.xml
 		self.cleanManifest(class_name)
 	def cleanManifest(self, targetClass):
@@ -624,7 +641,7 @@ class patcher:
 		os.system(f"unzip -d {self.tmp_dexdir} {self.fin}")
 		ls = os.listdir(self.tmp_patchdir)
 		if not "patch.txt" in ls:
-			print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No patch.txt found\x1b[0m")
+			print(f"\x1b[1;41;93m[!] dtlx: '{self.patchfile}': No patch.txt found\x1b[0m")
 			return
 		with open(self.tmp_patchdir+"/patch.txt") as f:
 			content = f.read().splitlines()
