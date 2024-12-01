@@ -116,6 +116,7 @@ class patcher:
 			elif args_iter=="rmpairip":self.removePairip()
 			elif args_iter=="rmvpndet":self.removeSmaliByRegex(regex_for_vpn_detection)
 			elif args_iter=="rmusbdebug":self.removeSmaliByRegex(regex_for_usb_debugging)
+			elif args_iter=="rmssrestrict":self.removeSmaliByRegex(regex_for_screenshot_restriction_removal)
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1003,6 +1004,7 @@ helpbanner = """     __ __   __
 --rmpairip: Remove Google Pairip Protection (Old Method)
 --rmvpndet: Remove VPN Detection
 --rmusbdebug: Remove USB Debugging
+--rmssrestrict: Remove ScreenShot Restriction
 """
 
 mainbanner = """                                                  
@@ -1020,6 +1022,32 @@ mainbanner = """
 \x1b[1;41;93mAPK REVERSER & PATCHER - author by Gameye98 (BHSec)\x1b[0m
 """
 
+regex_for_screenshot_restriction_removal = [
+	[
+		r'const/16 ([pv]\d+), 0x2000\n\n    invoke-virtual \{([pv]\d+), ([pv]\d+), ([pv]\d+)\}, Landroid/view/Window;->setFlags\(II\)V'
+		r'const/4 \1, 0x0\n\n    invoke-virtual {\2, \3, \4}, Landroid/view/Window;->setFlags(II)V'
+	],
+	[
+		r'invoke-virtual (\{.*\}), Landroid/view/Window;->setFlags\(II\)V'
+		r'#\0'
+	],
+	[
+		r'invoke-virtual (\{.*\}), Landroid/view/Window;->addFlags\(I\)V'
+		r'#\0'
+	],
+	[
+		r'const/16 (.*), 0x2000\s+invoke-virtual \{(.*), (.*), (.*)\}, Landroid/view/Window;->setFlags\(II\)V'
+		r'const/16 \1, 0x0\n\n    invoke-virtual {\2, \1, \1}, Landroid/view/Window;->setFlags\(II\)V'
+	],
+	[
+		r'invoke-static \{([pv]\d+)}, Lorg/telegram/messenger/FlagSecureReason;->isSecuredNow\(Landroid/view/Window;\)Z\n\n    move-result ([pv]\d+)\n\n    const/16 (.*), 0x2000'
+		r'invoke-static {\1}, Lorg/telegram/messenger/FlagSecureReason;->isSecuredNow\(Landroid/view/Window;\)Z\n\n    move-result \2\n\n    const/16 \3, 0x0'
+	],
+	[
+		r'iget ([pv]\d+, [pv]\d+), Landroid/view/(.*);->flags:I\n\n    or-int/lit16 ([pv]\d+, [pv]\d+), 0x2000'
+		r'iget \1, Landroid/view/\2;->flags:I      or-int/lit16 \3, 0x0'
+	]
+]
 regex_for_vpn_detection = [
 	[
 		r'invoke-virtual .*, Landroid/net/NetworkInfo.*isConnectedOrConnecting\(\)Z\n.*move-result (.*)',
@@ -1027,7 +1055,7 @@ regex_for_vpn_detection = [
 	],
 	[
 		r'(invoke-virtual \{.*}, Landroid/net/NetworkCapabilities;->hasTransport\(I\)Z\n\n    )move-result ([pv]\d+)',
-		r'\1const/4 $2, 0x0'
+		r'\1const/4 \2, 0x0'
 	]
 ]
 regex_for_usb_debugging = [
@@ -1049,34 +1077,34 @@ regex_for_usb_debugging = [
 	]
 ]
 regex_for_pairip = [
-		[
-			r'(# direct methods\n.method public static )appkiller\(\)V([\s\S]*?.end method)[\w\W]*',
-			r'\1constructor <clinit>()V\2',
-		],
-		[
-			r'sget-object.*\s+.*const-string v1,(.*\s+).*.line.*\n+.+.*\n.*invoke-static \{v0\}, Lmt/Objectlogger;->logstring\(Ljava/lang/Object;\)V',
-			r'const-string v0,\1'
-		],
-		[
-			r'invoke-static \{\}, .*;->callobjects\(\)V\n',
-			r''
-		],
-		[
-			r'(\.method public.*onReceive\(Landroid/content/Context;Landroid/content/Intent;\)V\n    \.registers) .[\s\S]*const-string/jumbo.*\s+.*\s+.*\s+(return-void)',
-			r'\1 3\n    \2'
-		],
-		[
-			r'.*invoke.*pairip.*\)Ljava/lang/Object;.*',
-			r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Ljava/lang/Object;'
-		],
-		[
-			r'.*invoke.*pairip.*\)V.*',
-			r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()V'
-		],
-		[
-			r'.*invoke.*pairip.*\)Z.*',
-			r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z'
-		]
+	[
+		r'(# direct methods\n.method public static )appkiller\(\)V([\s\S]*?.end method)[\w\W]*',
+		r'\1constructor <clinit>()V\2',
+	],
+	[
+		r'sget-object.*\s+.*const-string v1,(.*\s+).*.line.*\n+.+.*\n.*invoke-static \{v0\}, Lmt/Objectlogger;->logstring\(Ljava/lang/Object;\)V',
+		r'const-string v0,\1'
+	],
+	[
+		r'invoke-static \{\}, .*;->callobjects\(\)V\n',
+		r''
+	],
+	[
+		r'(\.method public.*onReceive\(Landroid/content/Context;Landroid/content/Intent;\)V\n    \.registers) .[\s\S]*const-string/jumbo.*\s+.*\s+.*\s+(return-void)',
+		r'\1 3\n    \2'
+	],
+	[
+		r'.*invoke.*pairip.*\)Ljava/lang/Object;.*',
+		r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Ljava/lang/Object;'
+	],
+	[
+		r'.*invoke.*pairip.*\)V.*',
+		r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()V'
+	],
+	[
+		r'.*invoke.*pairip.*\)Z.*',
+		r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z'
+	]
 ]
 strmatch = {
 	"adloader": (
@@ -1333,6 +1361,8 @@ def main():
 				funcls.append("rmvpndet")
 			elif px == "--rmusbdebug":
 				funcls.append("rmusbdebug")
+			elif px == "--rmssrestrict":
+				funcls.append("rmssrestrict")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
