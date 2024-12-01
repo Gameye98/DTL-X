@@ -26,10 +26,10 @@ def delete_recursively(path):
 				delete_recursively(i)
 		if os.path.isdir(path):
 			os.rmdir(path)
-			print(f"\x1b[1;93mdelete folder '{path}'\x1b[0m")
+			print(f"\x1b[1;94mdelete folder '{path}'\x1b[0m")
 		else:
 			os.remove(path)
-			print(f"\x1b[1;94mdelete file '{path}'\x1b[0m")
+			print(f"\x1b[1;93mdelete file '{path}'\x1b[0m")
 
 def check_class(dexfile, classname):
 	data = os.popen(f"dexdump -d {dexfile} | grep -A 1000 \"{classname}\"").read()
@@ -114,6 +114,8 @@ class patcher:
 			elif args_iter=="nocompile":self.iscompile=False
 			elif args_iter=="patch":self.patchApp()
 			elif args_iter=="rmpairip":self.removePairip()
+			elif args_iter=="rmvpndet":self.removeSmaliByRegex(regex_for_vpn_detection)
+			elif args_iter=="rmusbdebug":self.removeSmaliByRegex(regex_for_usb_debugging)
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -365,15 +367,9 @@ class patcher:
 	def removeSetsecure(self):
 		print("Still working on")
 	def removeTrackers(self):
-		self.removeClass(trackers, scan_type=1)
-	def removeClass(self, class_list, scan_type=0):
-		# scan type:
-		#   0 - default, which is normal
-		#   1 - trackers
-		# Delete class com.crashlytics.android
+		class_list = copy.deepcopy(trackers)
 		class_orig = copy.deepcopy(class_list)
-		if scan_type == 1:
-			class_list = list(map(lambda x: x[1], class_list))
+		class_list = list(map(lambda x: x[1], class_list))
 		for smalixdir in self.smalidir:
 			for class_name in class_list:
 				if os.path.isdir(smalixdir+"/"+class_name.replace(".","/")):
@@ -415,15 +411,8 @@ class patcher:
 		for smalixdir in self.smalidir:
 			self.f_ls = list(glob.iglob(f"{smalixdir}/**/*.smali",recursive=True))
 			totalpbar = len(self.f_ls)
-			#print(f"\x1b[1;96m[*] scan dirs: {smalixdir} ({totalpbar} files)\x1b[0m")
-			#print(f"\x1b[1;96m[*] scan dirs: {smalixdir} ({totalpbar} files)\x1b[0m")
 			counter = 0
 			ldc = 0
-			#pbar = progressbar.ProgressBar(totalpbar).start()
-			#self.f_ls = list(filter(lambda x: not x.startswith(".") and x.strip() != "", self.f_ls))
-			#self.f_ls = list(filter(lambda x: x.endswith(""), self.f_ls))
-			#self.f_ls = list(filter(lambda x: os.path.isfile(x), self.f_ls))
-			# Clean smali code that execute operations pertain to $class_name
 			for file in self.f_ls:
 				counter += 1
 				print(f"\r\x1b[1;93m[{loading[ldc]}] scan dirs: {smalixdir} ({counter}/{totalpbar} files)\x1b[0m   ",end="")
@@ -445,10 +434,8 @@ class patcher:
 						print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
 				with open(file,"w") as sw:
 					sw.write(smalicodes)
-			#pbar.finish()
-			#cnorm()
+		cnorm()
 		self.writeNeutralize()
-		# Remove leftover from AndroidManifest.xml
 		self.cleanManifest(class_name)
 	def cleanManifest(self, targetClass):
 		# Remove leftover from AndroidManifest.xml
@@ -960,6 +947,37 @@ class patcher:
 			print(f"\x1b[1;92m[+] remove {f}\x1b[0m")
 			os.remove(f)
 		self.writeNeutralize()
+	def removeSmaliByRegex(self, regexList):
+		civis()
+		for smalixdir in self.smalidir:
+			self.f_ls = list(glob.iglob(f"{smalixdir}/**/*.smali",recursive=True))
+			totalpbar = len(self.f_ls)
+			counter = 0
+			ldc = 0
+			for file in self.f_ls:
+				counter += 1
+				print(f"\r\x1b[1;93m[{loading[ldc]}] scan dirs: {smalixdir} ({counter}/{totalpbar} files)\x1b[0m   ",end="")
+				sys.stdout.flush()
+				ldc += 1
+				if ldc >= len(loading):
+					ldc = 0
+				smalicodes = open(file,"r").read()
+				for regex in regexList:
+					reg = re.findall(regex[0],smalicodes)
+					if len(reg) > 0:
+						regtext = f"\x1b[1;94m[*] regex: {regex[0]}\x1b[0m"
+						if len(regtext) < cols():
+							print(regtext+" "*(cols()-len(regtext)))
+						print(f"\x1b[1;92m[+] found: {file}\x1b[0m")
+						smalicodes = re.sub(regex[0],regex[1],smalicodes)
+						print(f"\x1b[1;41;93m[!] result: {reg[0]}\x1b[0m")
+						print(f"\x1b[1;93m[~] replacement: '{regex[1]}'\x1b[0m\n")
+						print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
+				with open(file,"w") as sw:
+					sw.write(smalicodes)
+			print()
+		cnorm()
+		self.writeNeutralize()
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -983,6 +1001,8 @@ helpbanner = """     __ __   __
 --paidkw: Search for InApp Purchased of Pro/Premium Features
 --noc: No compile/build the working project
 --rmpairip: Remove Google Pairip Protection (Old Method)
+--rmvpndet: Remove VPN Detection
+--rmusbdebug: Remove USB Debugging
 """
 
 mainbanner = """                                                  
@@ -1000,6 +1020,34 @@ mainbanner = """
 \x1b[1;41;93mAPK REVERSER & PATCHER - author by Gameye98 (BHSec)\x1b[0m
 """
 
+regex_for_vpn_detection = [
+	[
+		r'invoke-virtual .*, Landroid/net/NetworkInfo.*isConnectedOrConnecting\(\)Z\n.*move-result (.*)',
+		r'const \1, 0x0'
+	],
+	[
+		r'(invoke-virtual \{.*}, Landroid/net/NetworkCapabilities;->hasTransport\(I\)Z\n\n    )move-result ([pv]\d+)',
+		r'\1const/4 $2, 0x0'
+	]
+]
+regex_for_usb_debugging = [
+	[
+		r'(const-string (.*), "development_settings_enabled"\s*invoke-static \{(.*), (.*), (.*)\}, .*;->getInt\(.*Ljava\/lang\/String;I\)I\s*)(move-result (.*))',
+		r'\1#\2\nconst/4 \3, 0x0',
+	],
+	[
+		r'(const-string (.*), "development_settings_enabled"\s*const/4 (.*), 0x0\s*invoke-static \{(.*), (.*), (.*)\}, .*;->getInt\(.*Ljava\/lang\/String;I\)I\s*)(move-result (.*))',
+		r'\1#\2\nconst/4 \3, 0x0',
+	],
+	[
+		r'(const-string (.*), "adb_enabled"\s*invoke-static \{(.*), (.*), (.*)\}, .*;->getInt\(.*Ljava\/lang\/String;I\)I\s*)(move-result (.*))',
+		r'\1#\2\nconst/4 \3, 0x0',
+	],
+	[
+		r'(const-string (.*), "adb_enabled"\s*const/4 (.*), 0x0\s*invoke-static \{(.*), (.*), (.*)\}, .*;->getInt\(.*Ljava\/lang\/String;I\)I\s*)(move-result (.*)) ',
+		r'\1#\2\nconst/4 \3, 0x0',
+	]
+]
 regex_for_pairip = [
 		[
 			r'(# direct methods\n.method public static )appkiller\(\)V([\s\S]*?.end method)[\w\W]*',
@@ -1281,6 +1329,10 @@ def main():
 				ispatch = True
 			elif px == "--rmpairip":
 				funcls.append("rmpairip")
+			elif px == "--rmvpndet":
+				funcls.append("rmvpndet")
+			elif px == "--rmusbdebug":
+				funcls.append("rmusbdebug")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
