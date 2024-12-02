@@ -364,8 +364,6 @@ class patcher:
 				self.modifiedsourcefile += iterx+self.endl
 		list(map(lambda x: self.warning(x), tmp_fls))
 		open(self.fout+"/apktool.yml","w").write(self.modifiedsourcefile)
-	def removeSetsecure(self):
-		print("Still working on")
 	def removeTrackers(self):
 		class_list = copy.deepcopy(trackers)
 		class_orig = copy.deepcopy(class_list)
