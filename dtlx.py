@@ -103,7 +103,6 @@ class patcher:
 			elif args_iter=="rmnop":self.removeNop()
 			elif args_iter=="rmnown":self.removeUnknown()
 			elif args_iter=="customfont":self.customFont()
-			elif args_iter=="rmscrnrestrict":self.removeSetsecure()
 			elif args_iter=="rmcopy":self.removeCopyProtection()
 			elif args_iter=="rmprop":self.removeProperties()
 			elif args_iter=="rmtrackers":self.removeTrackers()
