@@ -998,6 +998,7 @@ helpbanner = """     __ __   __
 --findstring: Find string / Search Text
 --paidkw: Search for InApp Purchased of Pro/Premium Features
 --noc: No compile/build the working project
+--patch <PATCHFILE>: APK PATCHER (read README_PATCH.MD for more information)
 --rmpairip: Remove Google Pairip Protection (Old Method)
 --rmvpndet: Remove VPN Detection
 --rmusbdebug: Remove USB Debugging

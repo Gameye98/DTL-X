@@ -2,3 +2,6 @@ __pycache__
 data.txt
 AndroidManifest.xml
 apks
+.dtlx
+app.apk
+simplepatch.zip
