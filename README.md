@@ -33,7 +33,7 @@ Here are some of the features of DTL-X:
 * Open source  
 
 If you are interested in reversing or patching Android applications, then I recommend checking out the DTL-X tool. It is a powerful and easy-to-use tool that can be used to modify APKs in a variety of ways.  
-
+```bash
 --rmads1: target=AndroidManifest.xml,replace=com.google.android.gms.ad  
 --rmads2: No Internet (remove the required permission to do so)  
 --rmads3: Search using regex and replace string ("ca-app-pub) with ("noads)  
@@ -49,10 +49,12 @@ If you are interested in reversing or patching Android applications, then I reco
 --findstring: Find string / Search Text  
 --paidkw: Search for InApp Purchased of Pro/Premium Features  
 --noc: No Compile  
+--patch <PATCHFILE>: APK PATCHER (read README_PATCH.MD for more information)
 --rmpairip: Remove Google Pairip Protection (Old Method)  
 --rmvpndet: Remove VPN Detection  
 --rmusbdebug: Remove USB Debugging  
 --rmssrestrict: Remove Screenshot Restriction  
+```
 
 **• note 1: remove any whitespace found on the apk file name before patching**  
 **• note 2: you can use multiple method in a single run:**  
