@@ -860,6 +860,21 @@ class patcher:
 		delete_recursively(self.tmp_patchdir)
 		os.chdir(self.tmp_dexdir)
 		outpatchfile = f"{self.fnm}.patch.apk"
+		is_dex_repaired = False
+		if os.path.isfile("../bin/dexRepair"):
+			ls = os.listdir()
+			ls = list(filter(lambda x: os.path.isfile(x) and x.endswith(".dex"), ls))
+			for dex in ls:
+				repaireddex = dex+"_repaired.dex"
+				os.system(f"../bin/dexRepair -I '{dex}'")
+				os.rename(repaireddex, dex)
+			for dex in ls:
+				self.success(f"[+] {dex} is repaired")
+			is_dex_repaired = True
+		else:
+			self.warning("[!] dex repair is not installed")
+			self.warning("[!] run this command to install dexRepair")
+			print("\x1b[1;93m$ bash setup.sh\x1b[0m")
 		os.system(f"zip -r {outpatchfile} .")
 		os.rename(f"{outpatchfile}",os.getenv("PWD")+f"/{outpatchfile}")
 		os.chdir("..")
@@ -870,7 +885,8 @@ class patcher:
 		print("\x1b[1;92m[+] Verifying PATCHED APK file.... \x1b[0m",end="")
 		os.system(f"apksigner verify {outpatchfile}")
 		print("\x1b[1;92mOK\x1b[0m")
-		print("\x1b[1;91m[!] REMEMBER TO REPAIR THE MODIFIED DEX IN PATCHED APK\x1b[0m")
+		if not is_dex_repaired:
+			print("\x1b[1;91m[!] REMEMBER TO REPAIR THE MODIFIED DEX IN PATCHED APK\x1b[0m")
 		print(f"📂 Location: {outpatchfile}")
 	def patchstdout(self,text):
 		if text.strip().startswith("*"):
