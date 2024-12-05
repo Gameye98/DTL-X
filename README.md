@@ -76,6 +76,7 @@ If you are interested in reversing or patching Android applications, then I reco
 • progressbar (python's library)  
 • unzip  
 • zip  
+• dexRepair  
 
 ### Installation
 ```bash
@@ -89,6 +90,7 @@ cd DTL-X
 apt install aapt aapt2
 cp assets/aapt "$(command -v aapt)"
 cp assets/aapt2 "$(command -v aapt2)"
+bash setup.sh
 python dtlx.py
 ```
 
