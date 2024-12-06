@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import readline, copy
 import progressbar
+from assets.dexRepair import repair_dex, DexRepairError
 
 endl = "\012"
 civis = lambda: os.system("tput civis")
@@ -861,20 +862,17 @@ class patcher:
 		os.chdir(self.tmp_dexdir)
 		outpatchfile = f"{self.fnm}.patch.apk"
 		is_dex_repaired = False
-		if os.path.isfile("../bin/dexRepair"):
-			ls = os.listdir()
-			ls = list(filter(lambda x: os.path.isfile(x) and x.endswith(".dex"), ls))
-			for dex in ls:
-				repaireddex = dex+"_repaired.dex"
-				os.system(f"../bin/dexRepair -I '{dex}'")
+		ls = os.listdir()
+		ls = list(filter(lambda x: os.path.isfile(x) and x.endswith(".dex"), ls))
+		for dex in ls:
+			repaireddex = dex.replace(".dex","_repaired.dex")
+			try:
+				repair_dex(dex, output_dex_path=repaireddex)
 				os.rename(repaireddex, dex)
-			for dex in ls:
 				self.success(f"[+] {dex} is repaired")
-			is_dex_repaired = True
-		else:
-			self.warning("[!] dex repair is not installed")
-			self.warning("[!] run this command to install dexRepair")
-			print("\x1b[1;93m$ bash setup.sh\x1b[0m")
+			except DexRepairError as e:
+				print(f"Error during DEX repair: {e}")
+		is_dex_repaired = True
 		os.system(f"zip -r {outpatchfile} .")
 		os.rename(f"{outpatchfile}",os.getenv("PWD")+f"/{outpatchfile}")
 		os.chdir("..")

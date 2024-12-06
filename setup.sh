@@ -9,12 +9,12 @@ chmod +x $PREFIX/bin/aapt
 chmod +x $PREFIX/bin/aapt2
 echo -e "\x1b[1;92m[+] custom patched aapt & aapt2 installed\x1b[0m"
 # dexRepair installation
-if test -e dexRepair; then
-	rm -rf dexRepair
-fi
-git clone https://github.com/Gameye98/dexRepair
-rm dexRepair/Readme.md
-mv dexRepair/* .
-rm -rf dexRepair
-bash make.sh
-echo -e "\x1b[1;92m[+] dexRepair installed\x1b[0m"
+#if test -e dexRepair; then
+#	rm -rf dexRepair
+#fi
+#git clone https://github.com/Gameye98/dexRepair
+#rm dexRepair/Readme.md
+#mv dexRepair/* .
+#rm -rf dexRepair
+#bash make.sh
+#echo -e "\x1b[1;92m[+] dexRepair installed\x1b[0m"
