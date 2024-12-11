@@ -54,6 +54,7 @@ If you are interested in reversing or patching Android applications, then I reco
 --rmvpndet: Remove VPN Detection  
 --rmusbdebug: Remove USB Debugging  
 --rmssrestrict: Remove Screenshot Restriction  
+--rmxposedvpn: Remove ROOT XPosed and VPN Packages  
 ```
 
 **• note 1: remove any whitespace found on the apk file name before patching**  

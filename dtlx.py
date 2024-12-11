@@ -117,6 +117,7 @@ class patcher:
 			elif args_iter=="rmvpndet":self.removeSmaliByRegex(regex_for_vpn_detection)
 			elif args_iter=="rmusbdebug":self.removeSmaliByRegex(regex_for_usb_debugging)
 			elif args_iter=="rmssrestrict":self.removeSmaliByRegex(regex_for_screenshot_restriction_removal)
+			elif args_iter=="rmrootxposedvpn":self.removeSmaliByRegex(regex_for_root_xposed_and_vpn_removal)
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1017,6 +1018,7 @@ helpbanner = """     __ __   __
 --rmvpndet: Remove VPN Detection
 --rmusbdebug: Remove USB Debugging
 --rmssrestrict: Remove ScreenShot Restriction
+--rmxposedvpn: Remove ROOT XPosed and VPN Packages
 """
 
 mainbanner = """                                                  
@@ -1034,6 +1036,12 @@ mainbanner = """
 \x1b[1;41;93mAPK REVERSER & PATCHER - author by Gameye98 (BHSec)\x1b[0m
 """
 
+regex_for_root_xposed_and_vpn_removal = [
+	[
+		r'const-string (.*), "(com.koushikdutta.rommanager.license|com.ramdroid.appquarantinepro|com.noshufou.android.su.elite|com.zhiqupk.root.global|com.alephzain.framaroot|com.noshufou.android.su|com.noshufou.android.su.elite|eu.chainfire.supersu|com.thirdparty.superuser|com.koushikdutta.superuser|com.kingo.root|com.yellowes.su|com.topjohnwu.magisk|com.kingroot.kinguser|com.smedialink.oneclickroot|com.charles.lpoqasert|catch_.me_.if_.you_.can_|com.koushikdutta.rommanager|com.dimonvideo.luckypatcher|com.koushikdutta.rommanager.license|com.chelpus.lackypatch|com.ramdroid.appquarantine|supersu|com.ramdroid.appquarantinepro|com.android.vending.billing.InAppBillingService.COIN|com.android.vending.billing.InAppBillingService.LUCK|com.chelpus.luckypatcher|com.blackmartalpha|org.blackmart.market|com.allinone.free|com.repodroid.app|org.creeplays.hack|com.baseappfull.fwd|com.zmapp|com.dv.marketmod.installer|org.mobilism.android|com.android.wp.net.log|com.android.camera.update|cc.madkite.freedom|com.solohsu.android.edxp.manager|org.meowcat.edxposed.manager|com.xmodgame|com.cih.game_cih|/su/bin/|/system/usr/we-need-root/|/system/bin/failsafe/su|/data/local/su|/su/bin/su|/system/sd/xbin/su|/data/local/bin/su|/sbin/su|/data/local/xbin/su|magisk|/system/bin/su|/system/xbin/su|/system/app/Superuser.apk|/system/app/SuperSU.apk|/su/bin/su|com.guoshi.httpcanary|app.greyshirts.sslcapture|com.guoshi.httpcanary.premium|com.minhui.networkcapture|com.minhui.networkcapture.pro|com.egorovandreyrm.pcapremote|com.packagesniffer.frtparlak|jp.co.taosoftware.android.packetcapture|com.emanuelef.remote_capture|com.minhui.wifianalyzer|com.evbadroid.proxymon|com.evbadroid.wicapdemo|com.evbadroid.wicap|com.luckypatchers.luckypatcherinstaller|ru.UbLBBRLf.jSziIaUjL|me.weishu.kernelsu|com.topjohnwu.magisk|com.ramdroid.appquarantine|com.zachspong.temprootremovejb|com.koushikdutta.superuser|com.noshufou.android.su|eu.chainfire.supersu|/su/bin/su|com.minhui.networkcapture.pro|com.guoshi.httpcanary.premium|/data/local/tmp/frida-server|/data/local/tmp/frida-server|de.robv.android.xposed.installer|/su/bin/su|.thirdparty.superuser|.koushikdutta.superuser|.ramdroid.appquarantine|devadvance.rootcloak|.robv.android.xposed.installer|.saurik.substrate|.devadvance.rootcloakplus|.zachspong.temprootremovejb|.amphoras.hidemyroot|.formyhm.hideroot|.chelpus.lackypatch|.dimonvideo.luckypatcher|.koushikdutta.rommanager|.devadvance.rootcloakplus|/system/app/Superuser.apk|/system/xbin/which|com.phoneinfo.changerpro|com.VTechno.androididchanger|com.vivek.imeichanger|com.device.emulator|com.phoneinfo.changer|com.formyhm.hideroot|com.formyhm.hiderootPremium|com.amphoras.hidemyrootadfree|com.amphoras.hidemyroot|com.zachspong.temprootremovejb|com.saurik.substrate|com.devadvance.rootcloak|com.devadvance.rootcloakplus|com.chelpus.luckypatcher|com.ramdroid.appquarantine|com.ramdroid.appquarantinepro|com.joeykrim.rootcheck|/magisk/.core/bin/su|/system/xbin/busybox|/system/etc/init.d/99SuperSUDaemon|/dev/com.koushikdutta.superuser.daemon|/system/xbin/daemonsu|net.csu333.surrogate|fi.razerman.bancontactrootbypasser|me.phh.superuser|com.kingouser.com|/system/sd/xbin/|/system/bin/failsafe/|/sbin/|busybox|/system/app/Superuser|/system/app/SuperSU).*"'
+		r'const-string \1, ""'
+	]
+]
 regex_for_screenshot_restriction_removal = [
 	[
 		r'const/16 ([pv]\d+), 0x2000\n\n    invoke-virtual \{([pv]\d+), ([pv]\d+), ([pv]\d+)\}, Landroid/view/Window;->setFlags\(II\)V'
@@ -1375,6 +1383,8 @@ def main():
 				funcls.append("rmusbdebug")
 			elif px == "--rmssrestrict":
 				funcls.append("rmssrestrict")
+			elif px == "--rmxposedvpn":
+				funcls.append("rmrootxposedvpn")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
