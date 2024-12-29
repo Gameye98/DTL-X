@@ -69,30 +69,19 @@ If you are interested in reversing or patching Android applications, then I reco
 
 ### Requirements
 • python 3.x  
-• apktool v2.6.1-dirty  
-• smali v2.5.2 and baksmali v2.5.2  
 • aapt & aapt2 (patched version, could be found on assets/)  
 • apksigner  
 • openjdk  
 • progressbar (python's library)  
 • unzip  
 • zip  
-• dexRepair  
 
 ### Installation
 ```bash
-apt install python git ncurses-utils apktool apksigner openjdk-17 unzip zip
-python -m pip install progressbar
-git clone https://github.com/Gameye98/DTL-X
-cd DTL-X
-# Btw you need to replace the old/regular aapt with the patched version
-# The old/regular version could not handle filename with symbol
-# You can find the patched version of aapt on directory assets/
-apt install aapt aapt2
-cp assets/aapt "$(command -v aapt)"
-cp assets/aapt2 "$(command -v aapt2)"
-bash setup.sh
-python dtlx.py
+# On termux, u can run:
+bash termux_install.sh
+# On Linux Distribution:
+bash linux_install.sh
 ```
 
 #### Follow Our Channel or Join Our Discussion

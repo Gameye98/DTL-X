@@ -124,7 +124,7 @@ class patcher:
 				self.compilecmd = f"java -jar apkeditor.jar b -i {self.fout} -o {self.fout}_dtlx.apk"
 				self.compiled = f"{self.fout}_dtlx.apk"
 			elif os.path.isdir(f"{self.fout}/res"):
-				self.compilecmd = f"apktool b -f --use-aapt2 -a assets/aapt2 -d {self.fout}"
+				self.compilecmd = f"java -jar apktool-v2.9.3.jar b -f --use-aapt2 -a assets/aapt2 -d {self.fout}"
 				self.compiled = f"{self.fout}/dist/{self.fout}.apk"
 			else:
 				raise FileNotFoundError(f"dtlx: '{self.fout}': Not identified as project directory because of the missing resource directory")
