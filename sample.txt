@@ -1,0 +1,252 @@
+test --rmpairip annelids with apkSplitType="" replacement in AndroidManifest.xml
+
+
+tracker Bugsee blm dimasukin jg di dtlx ya gan @deletuserbot, ?
+NP Vip ↓↓↓
+• Apk VM Protection
+• Dex2C Protection
+• Dex2C Pro Protection
+• Conrol Flow Obfuscation 
+• Add Dialog and Toast (auto)
+• Dex Encrypt
+• Res Confusion 3.0
+• Conrol Flow Obfuscation (milk)
+• Obfuscate Apk
+• Remove Debugging İnformation
+• Against Dex Confusion
+• XML Search (free)
+• Res Anti Resource Obfucation
+• Encrypt Asset File 
+• Cheap Price
+• Dex Decrypt 
+• Many Signature Killer
+• Anti Apk Pseudo - Encryption
+• Apk Pseudo - Encryption
+• And Lots of Features.......
+• Resource Anti-Confuse
+• Arsc comparison
+
+remove xposed and vpn packages
+remove google play integrity check
+remove country registration
+signature checker
+• Remove dns Detection
+bypass ssl pinning with custom cert
+add --rmpairip20241020
+
+Apk Wall (Protector)
+Advanced Settings :
+- Add Login Validate V1
+- Add Login Validate V2
+Wall Protection :
+- Apk Protection V1
+- Apk Protection V2
+- Apk Protection V3
+- Apk Protection V4
+- Apk Protection 360加固
+- Apk Protection 几维安全
+- Apk Protection 爱加密
+- Apk Protection 腾讯加固
+- Apk Protection 梆梆加固
+Resources Confusing :
+- Shrink Resource
+- Shrink Anim
+- Shrink Drawable
+- Shrink Color
+- Shrink Animator
+- Shrink Layout
+- Shrink Raw
+- Shrink Font
+- Shrink Menu
+- Shrink Mipmap
+- Shrink Interpolator
+- Shrink Navigation
+- Shrink Transition
+- Shrink XML
+- Shrink Resource XML V1
+- Shrink Resource XML V2
+Configuration :
+- Add Custom Toast
+- Detect HttpCanary
+- Dialog Cancelable
+- Detect Emulator
+- Check Internet
+- Remove Detect Vpn Proxy
+- Remove Detect HttpCanary
+- Remove Bundling Software
+- Remove Update AlertDialog
+- Hide Root
+- Anti Screenshots
+- Detect VPN Proxy
+- Detect Xposed Framework
+Advanced features :
+- Check Emulator
+- Check Root
+- Check Xposed
+- Check VPN
+Follow Channel :
+https://t.me/DexSecurity
+
+
+Okay, let's expand that list to include more advanced features, including those related to patching, obfuscation, and protection, as you requested. Keep in mind that these are typically more complex operations that are simplified with "one-click" or few-step processes in MT Manager and NP Manager.
+**Expanded Feature List (MT Manager & NP Manager):**
+**I. Core File Management & APK Handling:**
+*   **Installation & Extraction:**
+    *   One-Click Install (APK)
+    *   Install as System App (root)
+    *   Extract APK from Installed App
+    *   Extract APK + Data
+    *   Batch APK Install/Uninstall
+*   **File Operations:**
+    *   Quick Copy/Move/Delete (single/batch)
+    *   Create New Folder
+    *   Rename Files/Folders
+    *   Search Files/Folders
+    *   Open Text/Image/Media files (Quick View)
+    *   Extract/Compress ZIP/RAR/APK/etc.
+*   **APK Information:**
+    *   Quick APK Info (version, package name, etc.)
+    *   View AndroidManifest.xml
+    *   View Resources (XML, images)
+    *   View APK Signature
+    *   View Application Icons
+**II. APK Modification & Code Editing:**
+*   **Dex Editing:**
+    *   Open Dex Files (for viewing/editing)
+    *   Dex to Jar Conversion
+    *   Jar to Dex Conversion
+    *   Class Searching/Filtering
+    *   Basic Smali Code Editing (if present)
+    *   String editing in Dex Files
+    *   Method/Field Injection
+*   **Resource Editing:**
+    *   Open XML Layout Files
+    *   Edit String Values (strings.xml)
+    *   Edit Color Values
+    *   Replace Images/Drawables
+    *   View / Extract / Replace Raw Resources
+    *   ARSC/Resource File Editing
+    *  Translation editing
+*   **APK Signing:**
+    *   One-Click Sign APK (with custom or default keys)
+    *   Verify Signature
+    *   Remove Signature
+**III. Advanced Patching & Modification:**
+*   **Automatic Patching:**
+    *   Apply predefined or user-created patches (often in `*.patch` format)
+    *   Patch specific method/classes based on signatures.
+    *   Apply common app bypass patches
+    *   Apply patches to bypass specific checks
+*   **Manual Patching:**
+    *   Smali code editing for patching logic.
+    *   Modify Dex bytecode with specific hex value.
+*  **Patch Creation:**
+    * Generate patches based on changes.
+**IV. Obfuscation & Protection (Code Security)**
+*   **Obfuscation:**
+    *   Basic Name Obfuscation (rename classes, methods, fields)
+    *   String Encryption (basic level)
+    *  Resource obfuscation (rename resources)
+*   **Protection:**
+    *   Anti-Debugging (basic checks)
+    *   Root Detection Bypass
+    *   Signature Verification Checks Bypass
+    *   Basic Tamper Detection
+    *   Code Integrity Checks Removal
+*  **Watermarking:**
+   * Add watermarks in to the app.
+**V. Cloning and Customization**
+*   **APK Cloning**
+    *   Clone an app with a new package name
+    *   Add random string to package name.
+    *   Change app version and app name.
+*   **Icon Customization:**
+    * Change app icon.
+    * Change app name.
+*  **App Info Modification**
+    * Modification of apk info.
+**VI. Other Advanced Features:**
+*   **Dynamic Analysis Tools:**
+    *   Simple logging functionality
+*   **File Comparison:**
+    *   Compare files side by side.
+*   **Web Server:**
+    *   Simple web server for files.
+*   **Scripting:**
+    *   Execute custom lua/javascript scripts for automation.
+* **Translation**
+    * Automatic app translation by providing custom strings.
+* **Permission Management**
+    * Toggle permissions for apps.
+*   **Root-Specific Tools:**
+    *   Mount system partition as RW.
+    *   Grant root permissions
+    *  File explorer with full root access.
+**Key Considerations:**
+*   **Complexity:** Many of these features are simplified actions that perform complex operations behind the scenes.
+*   **Root Access:** The more advanced features almost always require a rooted device or a Shizuku setup for system-level modifications.
+*   **Skill Level:** Effective use of patching, obfuscation, and protection features requires a strong understanding of Android development, APK internals, and smali/dex bytecode.
+*   **Security:** Incorrect use of these tools can lead to unstable apps or security vulnerabilities.
+*   **Ethical Use:** Modifying apps you don't own can be unethical and potentially illegal.
+*   **Software Updates:** These tools are continuously updated, so the available features can change over time.
+*   **User interface:** Some of these features may not be available in one click, but a couple of taps still makes it easy to achieve the task.
+**Disclaimer:** This list is comprehensive but not exhaustive, as new features are continuously added. It also does not cover all the nuances of each feature, or guarantee functionality in every scenario.
+This complete list should provide a much better overview of the capabilities of MT Manager and NP Manager, beyond basic file management. Use them responsibly!
+
+
+Sirs
+I seen moders write cleaned manifest, classes. Dex and removed trackers ,requests ,resources
+For example:
+GOOGLE Analytics REMOVED & Measurement + GStatic DISABLED 🔥
+◉ Google AdMob DISABLED (Dex+MF+Layout)
+◉ DEBUG Codes REMOVED (including source tags)
+◉ LOGGING Classes & Codes REMOVED 👍
+◉ Some Kotlin Invocations REMOVED
+◉ Apk Root Path Completely CLEANED
+◉ GOOGLE + Unwanted Codes REMOVED - Cleaned Manifest
+◉ Crash Libs/so files REMOVED
+◉ Firebase Ktx REMOVED
+◉ GOOGLE Billing DISABLED (MF+Dex)
+◉ GOOGLE PlayCore Cleaned 👍
+◉ Other Useless GOOGLE Classes REMOVED
+◉ Dropbox Class REMOVED - seemed useless
+◉ No Active TRACKERS/Analytics and ADS Remains 🔥
+◉ Trash Classes including R and BuildClasses REMOVED
+◉ No Credit Dialog Added at App Startup - a little bit faster Opening (rather at settings)
+◉ CLEANED + OPTIMIZED + ZIPALIGNED Package
+◉ Watch & LDPI REMOVED + Drawable Cleaned + Duplicate Graphics REMOVED
+◉ Much CLEANED + OPTIMIZED Graphics
+◉ No Ultra Compression Applied
+◉ Overall Package Size Reduced by up to 32% 🔥
+◉ GOOGLE Play Installed Package Check Disabled
+◉ AOSP Compatible (No GOOGLE) 🔥
+◉ GOOGLE Play Update Check Disabled (App)
+◉ Auto Update DISABLED
+◉ CPUS: ARMv7, ARMv8
+◉ LANGUAGE: BANGLA, ENGLISH, Russian, Arabic, Turkish
+XXXDPI REMOVED
+◉ More ADS xml/layout REMOVED
+◉ Location Permissions REMOVED
+◉ More Cleaned Manifest
+◉ Ultra Compression Applied
+Can anyone pls  teach me a non root person, how to do these stuff.
+Some sirs said apk editor and Patches , can anyone pls teach how to use those
+
+
+• Added secondary search in results xml search and file search
+• Added sort files in batch rename
+• Added tools (Split/Merge files, Encrypt/Decrypt files, Creat shortcut/link)
+• Added translation mode in .json files
+• Added support using ctrl+f for search in text editor 
+• Added detection new protections  • AppSealin加固, Nesun加固
+• Optimized location of closing text editor search function and extracting search results
+• Fixed issue of crash when using FTP function on Android 6.0 and below
+• Fixed issue of being unable to create a folder when using system authorization to access Android/data
+• Fixed some problems decompiler in arsc+ and axml editor
+• Fixed problem when some # symbols incorrectly colored in strings
+• Fixed problem when display space between letters with characters combining acute accent and problem with such characters in capital letters 
+• Fixed problem when some emoji display wrong 
+• Fixed problem with dispay multiline regex with \n in dex+
+• Fixed problem with detection protection 娜迦加固 (Naga Reinforcement)
+
+

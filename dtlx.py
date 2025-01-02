@@ -141,7 +141,11 @@ class patcher:
 				self.signed = self.signed[0:len(self.signed)-4]+"_sign.apk"
 			else:
 				self.signed = self.signed+"_sign.apk"
+			if not directrun():
+				self.signed = runfromwhere() + "/" + self.signed
 			os.rename(self.compiled, self.signed)
+			print("✅ Success! The file has been generated.")
+			print(f"📂 Location: {self.signed}")
 		# Delete Project if isclean = True
 		if self.isclean: os.system(f"rm -rf {self.fout}")
 	def warning(self,content):
@@ -1319,7 +1323,35 @@ def system(cmd):
 		print(e)
 		return None
 
+def check_update():
+	os.popen("git fetch origin master")
+	localcommitid = os.popen("git rev-parse HEAD").read().strip()
+	remotecommitid = os.popen("git rev-parse origin/master").read().strip()
+	if localcommitid != remotecommitid:
+		print("\x1b[1;41;93mUpdates are available. Pulling latest changes...\x1b[0m")
+		os.system("git pull origin master")
+
+def directrun():
+	realpath = os.popen(f"realpath \"{sys.argv[0]}\"").read().strip()
+	filename = realpath.split("/")[-1]
+	realpath = realpath[0:len(realpath)-len(filename)]
+	while realpath.endswith("/"):
+		realpath = realpath[0:len(realpath)-1]
+	if os.getenv("PWD") == realpath:
+		return True
+	return False
+
+def runfromwhere():
+	realpath = os.popen(f"realpath \"{sys.argv[0]}\"").read().strip()
+	filename = realpath.split("/")[-1]
+	realpath = realpath[0:len(realpath)-len(filename)]
+	while realpath.endswith("/"):
+		realpath = realpath[0:len(realpath)-1]
+	return realpath
+
 def main():
+	if directrun():
+		check_update()
 	print(mainbanner)
 	global isconsole
 	c = 0
