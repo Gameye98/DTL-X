@@ -12,3 +12,4 @@ if [ "$LOCAL" != "$REMOTE" ]; then
 else
     echo -e "\x1b[1;92mRepository is already up-to-date.\x1b[0m"
 fi
+
