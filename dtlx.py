@@ -570,6 +570,8 @@ class patcher:
 			for fx in f_ls:
 				countpbar += 1
 				pbar.update(countpbar)
+				if any([xxr in fx for xxr in ["/androidx/","/com/google/"]]):
+					continue
 				#print(f"\x1b[1;93m{fx}\x1b[0m")
 				with open(fx,"r") as smalifile:
 					lines = [x.strip() for x in smalifile.read().splitlines()]
