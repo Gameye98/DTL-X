@@ -1,4 +1,14 @@
 #!/usr/bin/python
+# Author: Gameye98
+# Team: Schadenfreude & BHS
+# Date: Tue Jan 7 07:11:08 2025
+# Description: Automate setup and installation of apktool
+####### Contacts
+# Telegram: https://t.me/deletuserbot
+# GitHub: https://github.com/Gameye98
+####### Organizations
+# GitHub: https://github.com/BlackHoleSecurity
+# Telegram: https://t.me/schdenfreude
 import os, requests
 import re, random
 import progressbar
