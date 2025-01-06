@@ -127,7 +127,7 @@ def main():
         os.system("chmod 755 "+bindir+"/apktool")
     print("\x1b[1;93mOK\x1b[0m")
     print("\x1b[1;41;93m[!] Run command below:\x1b[0m")
-    print("\x1b[1;41;93m$ cd $HOME && source .bashrc\x1b[0m")
+    print("\x1b[1;45m$ cd $HOME && source .bashrc\x1b[0m")
 
 if __name__ == "__main__":
     main()
