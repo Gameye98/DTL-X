@@ -38,6 +38,13 @@ def check_class(dexfile, classname):
 		return None
 	return data
 
+def respath(project_name, engine):
+	if engine == "apktool":
+		return project_name+"/res"
+	ls = list(glob.iglob("**/res", recursive=True))
+	ls = list(filter(lambda x: x.startswith(project_name+"/resources"), ls))
+	return ls[0]
+
 class patcher:
 	def __init__(self, fin, args,patchfile=None):
 		self.endl = "\012"
@@ -118,6 +125,7 @@ class patcher:
 			elif args_iter=="rmusbdebug":self.removeSmaliByRegex(regex_for_usb_debugging)
 			elif args_iter=="rmssrestrict":self.removeSmaliByRegex(regex_for_screenshot_restriction_removal)
 			elif args_iter=="rmrootxposedvpn":self.removeSmaliByRegex(regex_for_root_xposed_and_vpn_removal)
+			elif args_iter=="sslbypass":self.bypassSSL()
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -997,6 +1005,76 @@ class patcher:
 			print()
 		cnorm()
 		self.writeNeutralize()
+	def bypassSSL(self):
+		print("\x1b[1;92m[+] Bypass SSL Pinning\x1b[0m")
+		#for f in self.smalidir:
+			#f_ls = list(glob.iglob(f"{f}/**/*.smali", recursive=True))
+			#totalpbar = len(f_ls)
+			#print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
+			#counter = 0
+			#pbar = progressbar.ProgressBar(totalpbar).start()
+			#for file in f_ls:
+				#counter += 1
+				#pbar.update(counter)
+				#smalicodes = open(file,"r").read()
+		print("\x1b[1;92m[+] \x1b[1;97mModifying AndroidManifest.xml... \x1b[0m",end="")
+		manifest = open(self.fout+"/AndroidManifest.xml","r").read()
+		# Check for android:usesCleartextTraffic="true"
+		if "android:usesCleartextTraffic" in manifest:
+			if "android:usesCleartextTraffic=\"false\"" in manifest:
+				manifest = manifest.replace("android:usesCleartextTraffic=\"false\"","android:usesCleartextTraffic=\"true\"")
+		else:
+			manifest = [x.strip() for x in open(self.fout+"/AndroidManifest.xml","r").read().splitlines()]
+			manifestxml = []
+			isapplication = False
+			for v in manifest:
+				if isapplication:
+					manifestxml.append("android:usesCleartextTraffic=\"true\"")
+					manifestxml.append(v)
+					isapplication = False
+				else:
+					if "<application" in v:
+						isapplication = True
+					manifestxml.append(v)
+			manifest = "\n".join(manifestxml)
+		manifest = [x.strip() for x in manifest.splitlines()]
+		manifestxml = []
+		# Check networkSecurityConfig
+		isapplication = False
+		isnetworksecurityconfig = False
+		isnetsecconfadded = False
+		if "android:networkSecurityConfig" in manifest:
+			isnetworksecurityconfig = True
+		for v in manifest:
+			if isapplication:
+				if not isnetworksecurityconfig:
+					manifestxml.append("android:networkSecurityConfig=\"@xml/schadenfreude_mitm\"")
+					manifestxml.append(v)
+					isnetsecconfadded = True
+					isnetworksecurityconfig = True
+				elif "android:networkSecurityConfig" in v and not isnetsecconfadded:
+						manifestxml.append("android:networkSecurityConfig=\"@xml/schadenfreude_mitm\"")
+						isnetsecconfadded = True
+				elif ">" in v:
+					manifestxml.append(v)
+					isapplication = False
+				else:
+					manifestxml.append(v)
+			else:
+				manifestxml.append(v)
+		manifest = "\n".join(manifestxml)
+		with open(self.fout+"/AndroidManifest.xml","w") as f:
+			f.write(manifest)
+		print("\x1b[1;93mOK\x1b[0m")
+		print("\x1b[1;92m[+] \x1b[1;97mSet up network security configuration... \x1b[0m",end="")
+		resdir = respath(self.fout, "apktool" if self.decom_ng == 0 else "apkeditor")
+		if not os.path.isdir(resdir+"/xml"):
+			os.mkdir(resdir+"/xml")
+		if not os.path.isdir(resdir+"/raw"):
+			os.mkdir(resdir+"/raw")
+		shutil.copy("assets/schadenfreude_mitm.xml",resdir+"/xml/schadenfreude_mitm.xml")
+		shutil.copy("assets/HttpCanary.pem",resdir+"/raw/HttpCanary.pem")
+		print("\x1b[1;93mOK\x1b[0m")
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1025,6 +1103,7 @@ helpbanner = """     __ __   __
 --rmusbdebug: Remove USB Debugging
 --rmssrestrict: Remove ScreenShot Restriction
 --rmxposedvpn: Remove ROOT XPosed and VPN Packages
+--sslbypass: Bypass SSL Pinning
 """
 
 mainbanner = """                                                  
@@ -1419,6 +1498,8 @@ def main():
 				funcls.append("rmssrestrict")
 			elif px == "--rmxposedvpn":
 				funcls.append("rmrootxposedvpn")
+			elif px == "--sslbypass":
+				funcls.append("sslbypass")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")

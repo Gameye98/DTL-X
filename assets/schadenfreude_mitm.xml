@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<network-security-config>
+  <base-config cleartextTrafficPermitted="true">
+    <trust-anchors>
+      <certificates src="user" />
+      <certificates src="@raw/HttpCanary" />
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+	<domain-override host="*" domain-override-cleartext-traffic-permitted="true"/>
+	<domain-config cleartextTrafficPermitted="true">
+		<domain includeSubdomains="true">*</domain>
+	</domain-config>
+</network-security-config>
+
