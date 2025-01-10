@@ -149,8 +149,7 @@ class patcher:
 				self.signed = self.signed[0:len(self.signed)-4]+"_sign.apk"
 			else:
 				self.signed = self.signed+"_sign.apk"
-			if not directrun():
-				self.signed = runfromwhere() + "/" + self.signed
+			self.signed = whereapkfrom() + "/" + self.signed
 			os.rename(self.compiled, self.signed)
 			print("✅ Success! The file has been generated.")
 			print(f"📂 Location: {self.signed}")
@@ -1422,8 +1421,8 @@ def directrun():
 		return True
 	return False
 
-def runfromwhere():
-	realpath = __file__
+def whereapkfrom():
+	realpath = sys.argv[-1]
 	filename = realpath.split("/")[-1]
 	while realpath.endswith("/"):
 		realpath = realpath[0:len(realpath)-1]
