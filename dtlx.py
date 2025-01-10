@@ -1425,8 +1425,8 @@ def directrun():
 	return False
 
 def runfromwhere():
-	print(filepath)
 	filepath = sys.argv[0]
+	print(filepath)
 	realpath = os.popen(f"realpath \"{filepath}\"").read().strip()
 	filename = realpath.split("/")[-1]
 	while realpath.endswith("/"):
