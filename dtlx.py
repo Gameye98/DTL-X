@@ -1422,7 +1422,7 @@ def directrun():
 	return False
 
 def whereapkfrom():
-	realpath = sys.argv[-1]
+	realpath = os.popen(f"realpath \"{sys.argv[-1]}\"").read()
 	filename = realpath.split("/")[-1]
 	while realpath.endswith("/"):
 		realpath = realpath[0:len(realpath)-1]
