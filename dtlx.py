@@ -1060,6 +1060,8 @@ class patcher:
 				else:
 					manifestxml.append(v)
 			else:
+				if "<application" in v:
+					isapplication = True
 				manifestxml.append(v)
 		manifest = "\n".join(manifestxml)
 		with open(self.fout+"/AndroidManifest.xml","w") as f:
