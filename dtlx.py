@@ -1414,8 +1414,6 @@ def check_update():
 
 def directrun():
 	filepath = sys.argv[0]
-	while realpath.endswith("/"):
-		realpath = realpath[0:len(realpath)-1]
 	realpath = os.popen(f"realpath \"{filepath}\"").read().strip()
 	filename = realpath.split("/")[-1]
 	realpath = realpath[0:len(realpath)-len(filename)]
