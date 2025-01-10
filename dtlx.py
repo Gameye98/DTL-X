@@ -1413,7 +1413,10 @@ def check_update():
 		os.system("git pull origin master")
 
 def directrun():
-	realpath = os.popen(f"realpath \"{sys.argv[0]}\"").read().strip()
+	filepath = sys.argv[0]
+	while realpath.endswith("/"):
+		realpath = realpath[0:len(realpath)-1]
+	realpath = os.popen(f"realpath \"{filepath}\"").read().strip()
 	filename = realpath.split("/")[-1]
 	realpath = realpath[0:len(realpath)-len(filename)]
 	while realpath.endswith("/"):
@@ -1423,11 +1426,12 @@ def directrun():
 	return False
 
 def runfromwhere():
-	realpath = os.popen(f"realpath \"{sys.argv[0]}\"").read().strip()
+	filepath = sys.argv[0]
+	realpath = os.popen(f"realpath \"{filepath}\"").read().strip()
 	filename = realpath.split("/")[-1]
-	realpath = realpath[0:len(realpath)-len(filename)]
 	while realpath.endswith("/"):
 		realpath = realpath[0:len(realpath)-1]
+	realpath = realpath[0:len(realpath)-len(filename)]
 	return realpath
 
 def main():
