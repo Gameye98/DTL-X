@@ -1427,6 +1427,8 @@ def whereapkfrom():
 	while realpath.endswith("/"):
 		realpath = realpath[0:len(realpath)-1]
 	realpath = realpath[0:len(realpath)-len(filename)]
+	while realpath.endswith("/"):
+		realpath = realpath[0:len(realpath)-1]
 	return realpath
 
 def main():
