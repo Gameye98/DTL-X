@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import readline, copy
 import progressbar
+import xml.etree.ElementTree as et
 from assets.dexRepair import repair_dex, DexRepairError
 
 endl = "\012"
@@ -44,6 +45,25 @@ def respath(project_name, engine):
 	ls = list(glob.iglob("**/res", recursive=True))
 	ls = list(filter(lambda x: x.startswith(project_name+"/resources"), ls))
 	return ls[0]
+
+def parse_smali_head(contents):
+	"""
+	Extracts general information like the class name, the implemented interfaces,
+	and whether the class actually represents an interface from a Smali file.
+	"""
+	CLASS_PATTERN = re.compile(r"\.class(?P<keywords>.+)? L(?P<name>[^\s]+);")
+	IMPLEMENTS_PATTERN = re.compile(r"\.implements L(?P<name>[^\s]+);")
+	class_match = CLASS_PATTERN.search(contents)
+	class_groups = class_match.groupdict() if class_match else {}
+	implements_matches = IMPLEMENTS_PATTERN.finditer(contents)
+	implemented_interfaces = [match.group("name") for match in implements_matches]
+	keywords = class_groups.get("keywords", "")
+	is_interface = "interface" in keywords.strip().split() if keywords else False
+	return {
+		"name": class_groups.get("name"),
+		"implements": implemented_interfaces,
+		"isInterface": is_interface,
+	}
 
 class patcher:
 	def __init__(self, fin, args,patchfile=None):
@@ -155,6 +175,43 @@ class patcher:
 			print(f"📂 Location: {self.signed}")
 		# Delete Project if isclean = True
 		if self.isclean: os.system(f"rm -rf {self.fout}")
+	def values(self, typename, attribname, val):
+		resdir = respath(self.fout, "apktool" if self.decom_ng == 0 else "apkeditor")
+		destdir = resdir+"/"+typename
+		if not os.path.isdir(destdir):
+			os.mkdir(destdir)
+		# Modify res/values/public.xml
+		tree = et.parse(resdir+"/values/public.xml")
+		root = tree.getroot()
+		isexists = any(list(filter(lambda x: x.attrib.get("type").strip() == typename and x.attrib.get("name") == attribname, root)))
+		if isexists:
+			return
+		lasthex = list(map(lambda x: x.attrib.get("id"), root))
+		lasthex = hex(int(lasthex[-1], 16) + 65536)
+		element = et.Element("public", attrib={
+			"id": lasthex,
+			"type": typename,
+			"name": attribname
+		})
+		root.append(element)
+		updatedxml = et.tostring(root, encoding="unicode", method="xml")
+		with open(resdir+"/values/public.xml","w") as f:
+			f.write(updatedxml)
+		typename = ""
+		if typename == "raw":
+			tree = et.parse(resdir+"/values/raws.xml")
+			root = tree.getroot()
+			isexists = any(list(filter(lambda x: x.attrib.get("name") == attribname, root)))
+			if isexists:
+				return
+			element = et.Element("raw", attrib={
+				"name": attribname,
+			})
+			element.text = val
+			root.append(element)
+			updatedxml = et.tostring(root, encoding="unicode", method="xml")
+			with open(resdir+"/values/raws.xml","w") as f:
+				f.write(updatedxml)
 	def warning(self,content):
 		print(f"\x1b[1;41;93m{content}\x1b[0m")
 		__import__("time").sleep(0.1)
@@ -1006,16 +1063,30 @@ class patcher:
 		self.writeNeutralize()
 	def bypassSSL(self):
 		print("\x1b[1;92m[+] Bypass SSL Pinning\x1b[0m")
-		#for f in self.smalidir:
-			#f_ls = list(glob.iglob(f"{f}/**/*.smali", recursive=True))
-			#totalpbar = len(f_ls)
-			#print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
-			#counter = 0
-			#pbar = progressbar.ProgressBar(totalpbar).start()
-			#for file in f_ls:
-				#counter += 1
-				#pbar.update(counter)
-				#smalicodes = open(file,"r").read()
+		patchedsmali = []
+		for f in self.smalidir:
+			f_ls = list(glob.iglob(f"{f}/**/*.smali", recursive=True))
+			totalpbar = len(f_ls)
+			print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
+			counter = 0
+			pbar = progressbar.ProgressBar(totalpbar).start()
+			for file in f_ls:
+				counter += 1
+				pbar.update(counter)
+				smalicodes = open(file,"r").read()
+				lines = [x.strip() if x.strip()=="" else x for x in smalicodes.splitlines()]
+				if " interface " in lines[0]:
+					continue
+				for reg in regex_for_ssl_pinning:
+					escaped_signature = re.escape(reg[0])
+					pattern = re.compile(rf"(\.method public (?:final )?{escaped_signature})\n([\s\S]+?)\n(\.end method)", re.MULTILINE)
+					matches = pattern.findall(smalicodes)
+					for match in matches:
+						smalicodes = smalicodes.replace(match[0],reg[1])
+						patchedsmali.append(file)
+		patchedsmali = list(set(patchedsmali))
+		for i in patchedsmali:
+			print("patch", i)
 		print("\x1b[1;92m[+] \x1b[1;97mModifying AndroidManifest.xml... \x1b[0m",end="")
 		manifest = open(self.fout+"/AndroidManifest.xml","r").read()
 		# Check for android:usesCleartextTraffic="true"
@@ -1075,7 +1146,13 @@ class patcher:
 			os.mkdir(resdir+"/raw")
 		shutil.copy("assets/schadenfreude_mitm.xml",resdir+"/xml/schadenfreude_mitm.xml")
 		shutil.copy("assets/HttpCanary.pem",resdir+"/raw/HttpCanary.pem")
+		if self.decom_ng ==	1:
+			if not os.path.isdir(self.fout+"/root/res/raw"):
+				os.mkdir(self.fout+"/root/res/raw")
+			shutil.copy("assets/HttpCanary.pem",self.fout+"/root/res/raw/HttpCanary.pem")
 		print("\x1b[1;93mOK\x1b[0m")
+		self.values("raw", "HttpCanary", "res/raw/HttpCanary.pem")
+		self.values("xml","schadenfreude_mitm","res/xml/schadenfreude_mitm.xml")
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1121,6 +1198,47 @@ mainbanner = """
 
 \x1b[1;41;93mAPK REVERSER & PATCHER - author by Gameye98 (BHSec)\x1b[0m
 """
+# `return void;` in Smali. */
+RETURN_VOID_SMALI = ['.locals 0', 'return-void'];
+# `return true;` in Smali. */
+RETURN_TRUE_SMALI = ['.locals 1', 'const/4 v0, 0x1', 'return v0'];
+# `return new java.security.cert.X509Certificate[] {};` in Smali. */
+RETURN_EMPTY_CERT_ARRAY_SMALI = [
+    '.locals 1',
+    'const/4 v0, 0x0',
+    'new-array v0, v0, [Ljava/security/cert/X509Certificate;',
+    'return-object v0',
+];
+regex_for_ssl_pinning = [
+	[
+		'checkClientTrusted([Ljava/security/cert/X509Certificate;Ljava/lang/String;)V',
+		".locals 0\nreturn-void",
+	],
+	[
+		'checkServerTrusted([Ljava/security/cert/X509Certificate;Ljava/lang/String;)V',
+		".locals 0\nreturn-void",
+	],
+	[
+		'getAcceptedIssuers()[Ljava/security/cert/X509Certificate;',
+		".locals 1\nconst/4 v0, 0x0\nnew-array v0, v0, [Ljava/security/cert/X509Certificate;\nreturn-object v0",
+	],
+	[
+		'verify(Ljava/lang/String;Ljavax/net/ssl/SSLSession;)Z',
+		".locals 1\nconst/4 v0, 0x1\nreturn v0",
+	],
+	[
+		'check(Ljava/lang/String;Ljava/util/List;)V',
+		".locals 0\nreturn-void",
+	],
+	[
+		'check(Ljava/lang/String;Ljava/util/List;)V',
+		".locals 0\nreturn-void",
+	],
+	[
+		'check$okhttp(Ljava/lang/String;Lkotlin/jvm/functions/Function0;)V',
+		".locals 0\nreturn-void",
+	]
+]
 
 regex_for_root_xposed_and_vpn_removal = [
 	[
