@@ -146,6 +146,7 @@ class patcher:
 			elif args_iter=="rmssrestrict":self.removeSmaliByRegex(regex_for_screenshot_restriction_removal)
 			elif args_iter=="rmrootxposedvpn":self.removeSmaliByRegex(regex_for_root_xposed_and_vpn_removal)
 			elif args_iter=="sslbypass":self.bypassSSL()
+			elif args_iter=="rmexportdata":self.removeExportDataNotification()
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1153,6 +1154,30 @@ class patcher:
 		print("\x1b[1;93mOK\x1b[0m")
 		self.values("raw", "HttpCanary", "res/raw/HttpCanary.pem")
 		self.values("xml","schadenfreude_mitm","res/xml/schadenfreude_mitm.xml")
+	def removeExportDataNotification(self):
+		for f in self.smalidir:
+			f_ls = list(glob.iglob(f"{f}/**/*.smali", recursive=True))
+			totalpbar = len(f_ls)
+			print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
+			counter = 0
+			pbar = progressbar.ProgressBar(totalpbar).start()
+			for file in f_ls:
+				counter += 1
+				pbar.update(counter)
+				smalicodes = open(file,"r").read()
+				ismodify = False
+				for i in re.findall(r'invoke-.*\s{1,}Landroid/app/NotificationManager;->notify.*', smalicodes):
+					if i in smalicodes:
+						smalicodes = smalicodes.replace(i,"")
+					pathfile = f"\x1b[1;92m[+] found: {file}\x1b[0m"
+					while len(pathfile) < cols():
+						pathfile = pathfile+" "
+					print(pathfile)
+					ismodify = True
+					print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
+				if ismodify:
+					with open(file,"w") as f:
+						f.write(smalicodes)
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1182,6 +1207,7 @@ helpbanner = """     __ __   __
 --rmssrestrict: Remove ScreenShot Restriction
 --rmxposedvpn: Remove ROOT XPosed and VPN Packages
 --sslbypass: Bypass SSL Pinning [STILL WORKING ON]
+--rmexportdata: Remove App Cloner Export Data Notification
 """
 
 mainbanner = """                                                  
@@ -1621,6 +1647,8 @@ def main():
 				funcls.append("rmrootxposedvpn")
 			elif px == "--sslbypass":
 				funcls.append("sslbypass")
+			elif px == "--rmexportdata":
+				funcls.append("rmexportdata")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
