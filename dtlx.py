@@ -1160,6 +1160,7 @@ class patcher:
 			totalpbar = len(f_ls)
 			print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
 			counter = 0
+			civis()
 			pbar = progressbar.ProgressBar(totalpbar).start()
 			for file in f_ls:
 				counter += 1
@@ -1176,8 +1177,10 @@ class patcher:
 					ismodify = True
 					print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
 				if ismodify:
-					with open(file,"w") as f:
-						f.write(smalicodes)
+					with open(file,"w") as fw:
+						fw.write(smalicodes)
+			pbar.finish()
+			cnorm()
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
