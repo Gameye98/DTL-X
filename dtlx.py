@@ -1181,7 +1181,7 @@ helpbanner = """     __ __   __
 --rmusbdebug: Remove USB Debugging
 --rmssrestrict: Remove ScreenShot Restriction
 --rmxposedvpn: Remove ROOT XPosed and VPN Packages
---sslbypass: Bypass SSL Pinning
+--sslbypass: Bypass SSL Pinning [STILL WORKING ON]
 """
 
 mainbanner = """                                                  
