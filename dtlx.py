@@ -121,6 +121,8 @@ class patcher:
 			self.smalidir = list(filter(lambda x: x.startswith("smali"), os.listdir(self.fout)))
 			self.smalidir = list(map(lambda x: self.fout+"/"+x, self.smalidir))
 		self.args = args
+		# Remove split apks attribute from AndroidManifest.xml
+		self.cleanSplitApks()
 		for args_iter in self.args:
 			# Switch Operator
 			if args_iter=="rmads1":self.removeAds1()
@@ -188,7 +190,8 @@ class patcher:
 		if isexists:
 			return
 		lasthex = list(map(lambda x: x.attrib.get("id"), root))
-		lasthex = hex(int(lasthex[-1], 16) + 65536)
+		#lasthex = hex(int(lasthex[-1], 16) + 65536)
+		lasthex = hex(int(lasthex[-1], 16) + 1)
 		element = et.Element("public", attrib={
 			"id": lasthex,
 			"type": typename,
@@ -506,6 +509,21 @@ class patcher:
 		cnorm()
 		self.writeNeutralize()
 		self.cleanManifest(class_name)
+	def cleanSplitApks(self):
+		manifestxml = open(self.fout+"/AndroidManifest.xml","r").read()
+		rmattrbs = ["requiredSplitTypes", "splitTypes", "extractNativeLibs", "isSplitRequired"]
+		for kw in rmattrbs:
+			m = re.findall(rf'(android:{kw}\=\"(.*?)\")', manifestxml)
+			if len(m) > 0 and len(m[0]) > 0:
+				m = m[0][0]
+			else:
+				continue
+			if m in manifestxml:
+				print(f"\x1b[1;92m[+] remove \x1b[1;93m{m} \x1b[1;92mfrom AndroidManifest.xml... \x1b[0m",end="")
+				manifestxml = manifestxml.replace(m, "")
+				print("\x1b[1;93mOK\x1b[0m")
+		with open(self.fout+"/AndroidManifest.xml","w") as f:
+			f.write(manifestxml)
 	def cleanManifest(self, targetClass):
 		# Remove leftover from AndroidManifest.xml
 		# Try 1: Using regex
@@ -1070,6 +1088,7 @@ class patcher:
 			totalpbar = len(f_ls)
 			print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
 			counter = 0
+			civis()
 			pbar = progressbar.ProgressBar(totalpbar).start()
 			for file in f_ls:
 				counter += 1
@@ -1085,6 +1104,8 @@ class patcher:
 					for match in matches:
 						smalicodes = smalicodes.replace(match[0],reg[1])
 						patchedsmali.append(file)
+			pbar.finish()
+			cnorm()
 		patchedsmali = list(set(patchedsmali))
 		for i in patchedsmali:
 			print("patch", i)
@@ -1143,16 +1164,16 @@ class patcher:
 		resdir = respath(self.fout, "apktool" if self.decom_ng == 0 else "apkeditor")
 		if not os.path.isdir(resdir+"/xml"):
 			os.mkdir(resdir+"/xml")
-		if not os.path.isdir(resdir+"/raw"):
-			os.mkdir(resdir+"/raw")
+		#if not os.path.isdir(resdir+"/raw"):
+			#os.mkdir(resdir+"/raw")
 		shutil.copy("assets/schadenfreude_mitm.xml",resdir+"/xml/schadenfreude_mitm.xml")
-		shutil.copy("assets/HttpCanary.pem",resdir+"/raw/HttpCanary.pem")
-		if self.decom_ng ==	1:
-			if not os.path.isdir(self.fout+"/root/res/raw"):
-				os.mkdir(self.fout+"/root/res/raw")
-			shutil.copy("assets/HttpCanary.pem",self.fout+"/root/res/raw/HttpCanary.pem")
+		#shutil.copy("assets/HttpCanary.pem",resdir+"/raw/HttpCanary.pem")
+		#if self.decom_ng ==	1:
+			#if not os.path.isdir(self.fout+"/root/res/raw"):
+				#os.mkdir(self.fout+"/root/res/raw")
+			#shutil.copy("assets/HttpCanary.pem",self.fout+"/root/res/raw/HttpCanary.pem")
 		print("\x1b[1;93mOK\x1b[0m")
-		self.values("raw", "HttpCanary", "res/raw/HttpCanary.pem")
+		#self.values("raw", "HttpCanary", "res/raw/HttpCanary.pem")
 		self.values("xml","schadenfreude_mitm","res/xml/schadenfreude_mitm.xml")
 	def removeExportDataNotification(self):
 		for f in self.smalidir:
@@ -1210,7 +1231,7 @@ helpbanner = """     __ __   __
 --rmssrestrict: Remove ScreenShot Restriction
 --rmxposedvpn: Remove ROOT XPosed and VPN Packages
 --sslbypass: Bypass SSL Pinning [STILL WORKING ON]
---rmexportdata: Remove App Cloner Export Data Notification
+--rmexportdata: Remove AppCloner Export Data Notification
 """
 
 mainbanner = """                                                  
