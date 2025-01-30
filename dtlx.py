@@ -149,6 +149,7 @@ class patcher:
 			elif args_iter=="rmrootxposedvpn":self.removeSmaliByRegex(regex_for_root_xposed_and_vpn_removal)
 			elif args_iter=="sslbypass":self.simpleSslBypass()
 			elif args_iter=="rmexportdata":self.removeExportDataNotification()
+			elif args_iter=="fixinstall":self.removeSmaliByRegex(regex_for_fix_installer)
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1304,12 +1305,13 @@ helpbanner = """     __ __   __
 --noc: No compile/build the working project
 --patch <PATCHFILE>: APK PATCHER (read README_PATCH.MD for more information)
 --rmpairip: Remove Google Pairip Protection (Old Method)
---rmvpndet: Remove VPN Detection
+--rmvpndet: Remove VPN Detection (t.me/toyly_s)
 --rmusbdebug: Remove USB Debugging
 --rmssrestrict: Remove ScreenShot Restriction
 --rmxposedvpn: Remove ROOT XPosed and VPN Packages
 --sslbypass: Bypass SSL Pinning
 --rmexportdata: Remove AppCloner Export Data Notification
+--fixinstall: Fix Installer (t.me/toyly_s)
 """
 
 mainbanner = """                                                  
@@ -1402,12 +1404,14 @@ regex_for_screenshot_restriction_removal = [
 ]
 regex_for_vpn_detection = [
 	[
-		r'invoke-virtual .*, Landroid/net/NetworkInfo.*isConnectedOrConnecting\(\)Z\n.*move-result (.*)',
-		r'const \1, 0x0'
-	],
-	[
 		r'(invoke-virtual \{.*}, Landroid/net/NetworkCapabilities;->hasTransport\(I\)Z\n\n    )move-result ([pv]\d+)',
 		r'\1const/4 \2, 0x0'
+	]
+]
+regex_for_fix_installer = [
+	[
+		r'invoke-virtual \{.*\}, Landroid/content/pm/PackageManager;->(getInstallerPackageName|InstallerPackageName)\(Ljava/lang/String;\)Ljava/lang/String;',
+		r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->installer()Ljava/lang/String;'
 	]
 ]
 regex_for_usb_debugging = [
@@ -1632,6 +1636,12 @@ neutralize = """.class public Lsec/blackhole/dtlx/Schadenfreude;
     return v0
 .end method
 
+.method public static neutralize_true()Z
+    .locals 1
+    const/4 v0, 0x1
+    return v0
+.end method
+
 .method public static neutralize()Ljava/lang/Object;
     .locals 1
     # Create a new Object instance
@@ -1639,6 +1649,14 @@ neutralize = """.class public Lsec/blackhole/dtlx/Schadenfreude;
     # Call the constructor of Object
     invoke-direct {v0}, Ljava/lang/Object;-><init>()V
     # Return the instance
+    return-object v0
+.end method
+
+.method public static installer()Ljava/lang/String;
+    .registers 1
+
+    const-string v0, "com.android.vending"
+
     return-object v0
 .end method
 """
@@ -1751,6 +1769,8 @@ def main():
 				funcls.append("sslbypass")
 			elif px == "--rmexportdata":
 				funcls.append("rmexportdata")
+			elif px == "--fixinstall":
+				funcls.append("fixinstall")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")

@@ -51,12 +51,13 @@ If you are interested in reversing or patching Android applications, then I reco
 --noc: No Compile  
 --patch <PATCHFILE>: APK PATCHER (read README_PATCH.MD for more information)
 --rmpairip: Remove Google Pairip Protection (Old Method)  
---rmvpndet: Remove VPN Detection  
+--rmvpndet: Remove VPN Detection (t.me/toyly_s)  
 --rmusbdebug: Remove USB Debugging  
 --rmssrestrict: Remove Screenshot Restriction  
 --rmxposedvpn: Remove ROOT XPosed and VPN Packages  
 --sslbypass: Bypass SSL Pinning  
 --rmexportdata: Remove AppCloner Export Data Notification  
+--fixinstall: Fix Installer (t.me/toyly_s)  
 ```
 
 **• note 1: remove any whitespace found on the apk file name before patching**  
