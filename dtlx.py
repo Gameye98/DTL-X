@@ -173,7 +173,8 @@ class patcher:
 			else:
 				self.signed = self.signed+"_sign.apk"
 			self.signed = whereapkfrom() + "/" + self.signed
-			os.rename(self.compiled, self.signed)
+			shutil.copy(self.compiled, self.signed)
+			os.remove(self.compiled)
 			print("✅ Success! The file has been generated.")
 			print(f"📂 Location: {self.signed}")
 		# Delete Project if isclean = True
