@@ -147,7 +147,7 @@ class patcher:
 			elif args_iter=="rmusbdebug":self.removeSmaliByRegex(regex_for_usb_debugging)
 			elif args_iter=="rmssrestrict":self.removeSmaliByRegex(regex_for_screenshot_restriction_removal)
 			elif args_iter=="rmrootxposedvpn":self.removeSmaliByRegex(regex_for_root_xposed_and_vpn_removal)
-			elif args_iter=="sslbypass":self.bypassSSL()
+			elif args_iter=="sslbypass":self.simpleSslBypass()
 			elif args_iter=="rmexportdata":self.removeExportDataNotification()
 		# Compile Project
 		if self.iscompile:
@@ -1202,6 +1202,83 @@ class patcher:
 						fw.write(smalicodes)
 			pbar.finish()
 			cnorm()
+	def simpleSslBypass(self):
+		print("\x1b[1;92m[+] Bypass SSL Pinning\x1b[0m")
+		patchedsmali = []
+		for f in self.smalidir:
+			f_ls = list(glob.iglob(f"{f}/**/*.smali", recursive=True))
+			totalpbar = len(f_ls)
+			print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
+			counter = 0
+			civis()
+			pbar = progressbar.ProgressBar(totalpbar).start()
+			for file in f_ls:
+				counter += 1
+				pbar.update(counter)
+				smalicodes = open(file,"r").read()
+				lines = [x.strip() if x.strip()=="" else x for x in smalicodes.splitlines()]
+				if " interface " in lines[0]:
+					continue
+				for reg in regex_for_ssl_pinning:
+					escaped_signature = re.escape(reg[0])
+					pattern = re.compile(rf"(\.method public (?:final )?{escaped_signature})\n([\s\S]+?)\n(\.end method)", re.MULTILINE)
+					matches = pattern.findall(smalicodes)
+					for match in matches:
+						smalicodes = smalicodes.replace(match[0],reg[1])
+						patchedsmali.append(file)
+			pbar.finish()
+			cnorm()
+		patchedsmali = list(set(patchedsmali))
+		for i in patchedsmali:
+			print("patch", i)
+		print("\x1b[1;92m[+] \x1b[1;97mModifying AndroidManifest.xml... \x1b[0m",end="")
+		manifest = open(self.fout+"/AndroidManifest.xml","r").read()
+		# Check for android:usesCleartextTraffic="true"
+		if "android:usesCleartextTraffic" in manifest:
+			if "android:usesCleartextTraffic=\"false\"" in manifest:
+				manifest = manifest.replace("android:usesCleartextTraffic=\"false\"","android:usesCleartextTraffic=\"true\"")
+		else:
+			manifest = [x.strip() for x in open(self.fout+"/AndroidManifest.xml","r").read().splitlines()]
+			manifestxml = []
+			isapplication = False
+			for v in manifest:
+				if isapplication:
+					manifestxml.append("android:usesCleartextTraffic=\"true\"")
+					manifestxml.append(v)
+					isapplication = False
+				else:
+					if "<application" in v:
+						isapplication = True
+					manifestxml.append(v)
+			manifest = "\n".join(manifestxml)
+		nsc = []
+		# Check networkSecurityConfig
+		if "android:networkSecurityConfig" in manifest:
+			reg = re.findall(r'android:networkSecurityConfig="(.*?)"', manifest)
+			for m in reg:
+				nsc.append(m)
+		with open(self.fout+"/AndroidManifest.xml","w") as f:
+			f.write(manifest)
+		print("\x1b[1;93mOK\x1b[0m")
+		print("\x1b[1;92m[+] \x1b[1;97mSet up network security configuration... \x1b[0m",end="")
+		if len(nsc) < 1:
+			print("\x1b[1;91mFAIL\x1b[0m")
+			return
+		for config in nsc:
+			config = config.replace("@","")
+			resdir = respath(self.fout, "apktool" if self.decom_ng == 0 else "apkeditor")
+			while resdir.endswith("/"):
+				resdir = resdir[0:len(resdir)-1]
+			while config.startswith("/"):
+				config = config[1:]
+			if not config.lower().endswith(".xml"):
+				config = config+".xml"
+			with open("assets/schadenfreude_mitm.xml","r") as trustedcert:
+				cert = trustedcert.read()
+				if os.path.isfile(resdir+"/"+config):
+					with open(resdir+"/"+config,"w") as confwriter:
+						confwriter.write(cert)
+		print("\x1b[1;93mOK\x1b[0m")
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1230,7 +1307,7 @@ helpbanner = """     __ __   __
 --rmusbdebug: Remove USB Debugging
 --rmssrestrict: Remove ScreenShot Restriction
 --rmxposedvpn: Remove ROOT XPosed and VPN Packages
---sslbypass: Bypass SSL Pinning [STILL WORKING ON]
+--sslbypass: Bypass SSL Pinning
 --rmexportdata: Remove AppCloner Export Data Notification
 """
 

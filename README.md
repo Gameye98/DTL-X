@@ -55,7 +55,7 @@ If you are interested in reversing or patching Android applications, then I reco
 --rmusbdebug: Remove USB Debugging  
 --rmssrestrict: Remove Screenshot Restriction  
 --rmxposedvpn: Remove ROOT XPosed and VPN Packages  
---sslbypass: Bypass SSL Pinning [STILL WORKING ON]  
+--sslbypass: Bypass SSL Pinning  
 --rmexportdata: Remove AppCloner Export Data Notification  
 ```
 
