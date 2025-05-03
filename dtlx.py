@@ -143,6 +143,7 @@ class patcher:
 			elif args_iter=="nocompile":self.iscompile=False
 			elif args_iter=="patch":self.patchApp()
 			elif args_iter=="rmpairip":self.removePairip()
+			elif args_iter=="bppairip":self.bypassPairip()
 			elif args_iter=="rmvpndet":self.removeSmaliByRegex(regex_for_vpn_detection)
 			elif args_iter=="rmusbdebug":self.removeSmaliByRegex(regex_for_usb_debugging)
 			elif args_iter=="rmssrestrict":self.removeSmaliByRegex(regex_for_screenshot_restriction_removal)
@@ -1281,6 +1282,55 @@ class patcher:
 					with open(resdir+"/"+config,"w") as confwriter:
 						confwriter.write(cert)
 		print("\x1b[1;93mOK\x1b[0m")
+	def bypassPairip(self):
+		isinject = False
+		isinjectfile = None
+		for d in self.smalidir:
+			if isinject:
+				pbar.finish()
+				cnorm()
+				break
+			self.f_ls = list(glob.iglob(f"{d}/**/*.smali", recursive=True))
+			totalpbar = len(self.f_ls)
+			print(f"\x1b[1;96m[*] scan dirs: {d} ({totalpbar} files)\x1b[0m")
+			counter = 0
+			pbar = progressbar.ProgressBar(totalpbar).start()
+			civis()
+			for smalifile in self.f_ls:
+				if isinject:
+					counter += (totalpbar - counter)
+					pbar.update(counter)
+					break
+				counter += 1
+				pbar.update(counter)
+				with open(smalifile,"r") as f:
+					content = f.read()
+				if "pairipcoree" in content:
+					return
+				if "pairipcore" in content and "loadLibrary" in content:
+					content = content.splitlines()
+					for k, line in enumerate(content):
+						if all(any(m in x for x in content[k+1:k+5]) for m in ["pairipcore","loadLibrary"]):
+							content.insert(k, "    const-string v0, \"pairipcoree\"")
+							content.insert(k+1, "    invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V")
+							with open(smalifile,"w") as fw:
+								for index,data in enumerate(content):
+									fw.write(data+"\n")
+							isinject = True
+							isinjectfile = smalifile
+							break
+			pbar.finish()
+			cnorm()
+		if isinject:
+			print("\x1b[1;92m[+] bppairip: \x1b[1;93mpairipcoree code has been injected!\x1b[0m")
+			# remove pairip shared object library
+			for f in glob.iglob(f"{self.fout}/**/lib/arm64-v8a/libpairipcore.so",recursive=True):
+				f = f.strip()
+				filename = f.split("/")[-1]
+				pathfile = f[0:len(f)-len(filename)]
+				shutil.copy("assets/chunk00.bin", pathfile+"libpairipcoree.so")
+				print("\x1b[1;92m[+] bppairip: \x1b[1;93mlibpairipcoree.so has been added!\x1b[0m")
+				break
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1305,6 +1355,7 @@ helpbanner = """     __ __   __
 --noc: No compile/build the working project
 --patch <PATCHFILE>: APK PATCHER (read README_PATCH.MD for more information)
 --rmpairip: Remove Google Pairip Protection (Old Method)
+--bppairip: Simple Bypass Google Pairip Protection (credit to 0xdeadc0de)
 --rmvpndet: Remove VPN Detection (t.me/toyly_s)
 --rmusbdebug: Remove USB Debugging
 --rmssrestrict: Remove ScreenShot Restriction
@@ -1771,6 +1822,8 @@ def main():
 				funcls.append("rmexportdata")
 			elif px == "--fixinstall":
 				funcls.append("fixinstall")
+			elif px == "--bppairip":
+				funcls.append("bppairip")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
