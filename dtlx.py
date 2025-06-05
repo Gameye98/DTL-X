@@ -151,6 +151,7 @@ class patcher:
 			elif args_iter=="sslbypass":self.simpleSslBypass()
 			elif args_iter=="rmexportdata":self.removeExportDataNotification()
 			elif args_iter=="fixinstall":self.removeSmaliByRegex(regex_for_fix_installer)
+			elif args_iter=="il2cppdumper":self.il2cppdumper()
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1331,6 +1332,88 @@ class patcher:
 				shutil.copy("assets/chunk00.bin", pathfile+"libpairipcoree.so")
 				print("\x1b[1;92m[+] bppairip: \x1b[1;93mlibpairipcoree.so has been added!\x1b[0m")
 				break
+	def searchMainClass(self):
+		with open(f"{self.fout}/AndroidManifest.xml","r") as f:
+			content = f.read().splitlines()
+			isapplication = False
+			mainclass = None
+			print("\x1b[1;92m[+] \x1b[1;97mlooking for Main class... \x1b[0m", end="")
+			for k, v in enumerate(content):
+				if isapplication:
+					if "android:name" in v.strip():
+						mainclass = re.findall(r'"(.*?)"', v)[0]
+						break
+				if "<application" in v.strip():
+					isapplication = True
+			print(f"\x1b[1;93m({mainclass}) \x1b[1;92mOK\x1b[0m")
+			return mainclass
+	def il2cppdumper(self):
+		mainclass = self.searchMainClass()
+		mainclass = mainclass.replace(".","/")
+		mainfile = list(glob.iglob(f"{self.fout}/smali/**/{mainclass}.smali", recursive=True))[0]
+		with open(mainfile,"r") as f:
+			content = f.read()
+		data = content.splitlines()
+		isoncreate = False
+		isconstructor = False
+		smalicodes = []
+		print("\x1b[1;92m[+] \x1b[1;97mwrite invoker of il2cppdumper ... \x1b[0m", end="")
+		if "onCreate(" in content:
+			for k, v in enumerate(data):
+				if v.strip().startswith(".method") and "onCreate(" in v:
+					isoncreate = True
+				if isoncreate:
+					#if v.strip().startswith(".register"):
+					smalicodes.append(v)
+					smalicodes.append("const-string v0, \"il2cppdumper\"")
+					smalicodes.append("invoke-static {v0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V")
+					isoncreate = False
+					continue
+				smalicodes.append(v)
+			list(map(lambda x: print(f"\x1b[1;92m{x}\x1b[0m"), smalicodes))
+		else:
+			for k, v in enumerate(data):
+				if v.strip().startswith(".method") and "constructor <init>()" in v:
+					isconstructor = True
+				if isconstructor:
+					#if v.strip().startswith(".register"):
+					smalicodes.append(v)
+					smalicodes.append("const-string p0, \"il2cppdumper\"")
+					smalicodes.append("invoke-static {p0}, Ljava/lang/System;->loadLibrary(Ljava/lang/String;)V")
+					isconstructor = False
+					continue
+				smalicodes.append(v)
+			list(map(lambda x: print(f"\x1b[1;92m{x}\x1b[0m"), smalicodes))
+		with open(mainfile, "w") as f:
+			f.write("\n".join(smalicodes))
+		print("\x1b[1;92mOK\x1b[0m")
+		print("\x1b[1;92m[+] \x1b[1;97madd libil2cppdumper.so ... \x1b[0m", end="")
+		armv8 = list(glob.iglob(f"{self.fout}/**/lib/arm64-v8a/libil2cpp.so", recursive=True))
+		armv7 = list(glob.iglob(f"{self.fout}/**/lib/armeabi-v7a/libil2cpp.so", recursive=True))
+		#armv8 = list(filter(lambda x: "v8a" in x, pathlib))
+		armv8 = armv8[0] if len(armv8) > 0 else None
+		#armv7 = list(filter(lambda x: "v7a" in x, pathlib))
+		armv7 = armv7[0] if len(armv7) > 0 else None
+		if armv7:
+			pathlib = armv7.strip()
+		elif armv8:
+			pathlib = armv8.strip()
+		while not pathlib.endswith("lib"):
+			lastname = pathlib.split("/")[-1]
+			pathlib = pathlib[0:len(pathlib)-len(lastname)]
+			while pathlib.endswith("/"):
+				pathlib = pathlib[0:len(pathlib)-1]
+		while pathlib.endswith("/"):
+			pathlib = pathlib[0:len(pathlib)-1]
+		armv8 = pathlib+"/arm64-v8a"
+		armv7 = pathlib+"/armeabi-v7a"
+		if not os.path.isdir(armv8):
+			os.mkdir(armv8)
+		if not os.path.isdir(armv7):
+			os.mkdir(armv7)
+		shutil.copy("assets/chunk01.bin", armv8+"/libil2cppdumper.so")
+		shutil.copy("assets/chunk02.bin", armv7+"/libil2cppdumper.so")
+		print("\x1b[1;92mOK\x1b[0m")
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1363,6 +1446,7 @@ helpbanner = """     __ __   __
 --sslbypass: Bypass SSL Pinning
 --rmexportdata: Remove AppCloner Export Data Notification
 --fixinstall: Fix Installer (t.me/toyly_s)
+--il2cppdumper: Il2Cpp Dumper (credit: androeed.ru)
 """
 
 mainbanner = """                                                  
@@ -1824,6 +1908,8 @@ def main():
 				funcls.append("fixinstall")
 			elif px == "--bppairip":
 				funcls.append("bppairip")
+			elif px == "--il2cppdumper":
+				funcls.append("il2cppdumper")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
