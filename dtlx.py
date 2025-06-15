@@ -14,6 +14,13 @@ civis = lambda: os.system("tput civis")
 cnorm = lambda: os.system("tput cnorm")
 cols = lambda: int(os.popen("tput cols").read().strip())
 loading = ["|","/","-","\\"]
+dtlxhistory = ".dtlx_history"
+
+def rnd_wordlist():
+	with open("randomlist.txt","r") as f:
+		contents = f.read().splitlines()
+		contents = list(map(lambda x: x.strip(), contents))
+		return contents
 
 def randomid():
 	randomstr = ""
@@ -64,6 +71,13 @@ def parse_smali_head(contents):
 		"implements": implemented_interfaces,
 		"isInterface": is_interface,
 	}
+
+def finditem(dataset, kw, val):
+	for k, v in enumerate(dataset):
+		if kw in v.keys():
+			if v[kw] == val:
+				return True
+	return False
 
 class patcher:
 	def __init__(self, fin, args,patchfile=None):
@@ -152,6 +166,7 @@ class patcher:
 			elif args_iter=="rmexportdata":self.removeExportDataNotification()
 			elif args_iter=="fixinstall":self.removeSmaliByRegex(regex_for_fix_installer)
 			elif args_iter=="il2cppdumper":self.il2cppdumper()
+			elif args_iter=="obfuscatemethods":self.obfuscateMethods()
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -343,6 +358,7 @@ class patcher:
 			os.system(f"rm -rf {self.unknown}")
 	def customFont(self):
 		fontPath = input("+++++ fontfile: ")
+		readline.write_history_file(dtlxhistory)
 		if os.path.isfile(fontPath):
 			# Generate user font hash
 			fontHash = hashlib.md5(open(fontPath,"rb").read()).hexdigest()
@@ -573,6 +589,7 @@ class patcher:
 					open(fx,"w").write(self.modifiedsourcefile)
 	def findstr(self):
 		texttofind = input("[*] Text to find: ")
+		readline.write_history_file(dtlxhistory)
 		self.searchresults = []
 		for f in self.smalidir:
 			f_ls = os.popen(f"find {f}/").read().splitlines()
@@ -1414,6 +1431,79 @@ class patcher:
 		shutil.copy("assets/chunk01.bin", armv8+"/libil2cppdumper.so")
 		shutil.copy("assets/chunk02.bin", armv7+"/libil2cppdumper.so")
 		print("\x1b[1;92mOK\x1b[0m")
+	def obfuscateMethods(self):
+		packagename = input("[*] package name: ")
+		readline.write_history_file(dtlxhistory)
+		pkgname = packagename.replace(".","/")
+		lstfiles = []
+		for xdir in self.smalidir:
+			if os.path.isdir(f"{xdir}/{pkgname}"):
+				for file in glob.iglob(f"{xdir}/{pkgname}/*.smali",recursive=True):
+					lstfiles.append(file)
+		cycle = ["/","-","\\","|"]
+		kcycle = 0
+		civis()
+		classlist = []
+		for k,v in enumerate(lstfiles):
+			if kcycle >= len(cycle):
+				kcycle = 0
+			textstr = f"{cycle[kcycle]} register methods - {lstfiles[k]}"
+			textstr = textstr+" "*(cols()-len(textstr) if cols() > len(textstr) else 0)
+			sys.stdout.write("\x1b[F"*textstr.count("\012"))
+			sys.stdout.write(f"\r{textstr}")
+			sys.stdout.flush()
+			with open(v, "r") as f:
+				contents = f.read().splitlines()
+			classname = list(filter(lambda x: x.strip().startswith(".class"), contents))[0]
+			classname = list(filter(lambda x: x.startswith("L") and ";" in x, classname.split()))[0]
+			classname = classname.strip()
+			for kline, line in enumerate(contents):
+				if line.strip().startswith(".method"):
+					methodname = line.strip().split()[-1]
+					if "<" in methodname and "init" in methodname:
+						continue
+					randlst = rnd_wordlist()
+					putaran = 1
+					has_successed = False
+					while not has_successed:
+						for xk,xv in enumerate(randlst):
+							newname = xv
+							has_exists = finditem(classlist, "assigned", newname)
+							if has_exists:
+								continue
+							tmpdata = {"class":classname,"method":methodname,"assigned":newname,"name":classname+"->"+methodname,"rename":classname+"->"+newname+"("+methodname.split("(")[1]}
+							classlist.append(tmpdata)
+							methodname = methodname.split("(")[0]
+							contents[kline] = line.replace(methodname,newname)
+							has_successed = True
+							break
+						putaran += 1
+			with open(v,"w") as f:
+				f.write("\012".join(contents))
+			kcycle += 1
+		for xdir in self.smalidir:
+			lstfiles = list(glob.iglob(f"{xdir}/**/*.smali", recursive=True))
+			totalpbar = len(lstfiles)
+			if kcycle >= len(cycle):
+				kcycle = 0
+			counter = 0
+			for smalifile in lstfiles:
+				counter += 1
+				if kcycle >= len(cycle):
+					kcycle = 0
+				print(f"\r{cycle[kcycle]} scanning {xdir}... {counter/totalpbar*100}",end="")
+				sys.stdout.flush()
+				with open(smalifile,"r") as smaliread:
+					codes = smaliread.read().splitlines()
+				for wk, wv in enumerate(codes):
+					for xk, xv in enumerate(classlist):
+						if xv["name"] in wv:
+							codes[wk] = wv.replace(xv["name"], xv["rename"])
+				with open(smalifile,"w") as smaliwrite:
+					smaliwrite.write("\012".join(codes))
+				kcycle += 1
+			kcycle += 1
+		cnorm()
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1447,6 +1537,7 @@ helpbanner = """     __ __   __
 --rmexportdata: Remove AppCloner Export Data Notification
 --fixinstall: Fix Installer (t.me/toyly_s)
 --il2cppdumper: Il2Cpp Dumper (credit: androeed.ru)
+--obfuscatemethods: Method Identifier Obfuscation [STILL WORKING ON]
 """
 
 mainbanner = """                                                  
@@ -1910,6 +2001,8 @@ def main():
 				funcls.append("bppairip")
 			elif px == "--il2cppdumper":
 				funcls.append("il2cppdumper")
+			elif px == "--obfuscatemethods":
+				funcls.append("obfuscatemethods")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
@@ -1920,6 +2013,9 @@ def main():
 					sys.exit()
 		patcher(ftarget,funcls,patchfile=patchfile)
 
+if not os.path.isfile(dtlxhistory):
+	open(dtlxhistory,"w")
+readline.read_history_file(dtlxhistory)
 if __name__ == "__main__":
 	if len(sys.argv) >= 2:
 		main()

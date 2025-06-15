@@ -60,6 +60,7 @@ If you are interested in reversing or patching Android applications, then I reco
 --rmexportdata: Remove AppCloner Export Data Notification  
 --fixinstall: Fix Installer (t.me/toyly_s)  
 --il2cppdumper: Il2Cpp Dumper (credit: androeed.ru)  
+--obfuscatemethods: Method Identifier Obfuscation [STILL WORKING ON]  
 ```
 
 **• note 1: remove any whitespace found on the apk file name before patching**  
