@@ -1568,7 +1568,7 @@ helpbanner = """     __ __   __
 --rmexportdata: Remove AppCloner Export Data Notification
 --fixinstall: Fix Installer (t.me/toyly_s)
 --il2cppdumper: Il2Cpp Dumper (credit: androeed.ru)
---obfuscatemethods: Method Identifier Obfuscation
+--obfuscatemethods: Methods Identifier Obfuscation
 """
 
 mainbanner = """                                                  
