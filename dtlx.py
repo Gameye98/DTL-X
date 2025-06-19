@@ -73,11 +73,13 @@ def parse_smali_head(contents):
 	}
 
 def finditem(dataset, kw, val):
+	value = None
 	for k, v in enumerate(dataset):
 		if kw in v.keys():
 			if v[kw] == val:
-				return True
-	return False
+				return [v[kw], True]
+			value = v[kw]
+	return [value, False]
 
 class patcher:
 	def __init__(self, fin, args,patchfile=None):
@@ -1444,12 +1446,19 @@ class patcher:
 		kcycle = 0
 		civis()
 		classlist = []
+		prevlen = 0
+		putaran = []
+		randlst = rnd_wordlist()
 		for k,v in enumerate(lstfiles):
 			if kcycle >= len(cycle):
 				kcycle = 0
 			textstr = f"{cycle[kcycle]} register methods - {lstfiles[k]}"
-			textstr = textstr+" "*(cols()-len(textstr) if cols() > len(textstr) else 0)
-			sys.stdout.write("\x1b[F"*textstr.count("\012"))
+			prevlen = len(textstr) if len(textstr) > prevlen else prevlen
+			#textstr = textstr+" "*(cols()-len(textstr) if cols() > len(textstr) else 0)
+			textstr = textstr+" "*prevlen
+			textctr = len(textstr)//cols() if len(textstr) > cols() else 0
+			textctr = textctr if textctr > textstr.count("\012") else textctr + textstr.count("\012")
+			sys.stdout.write("\x1b[F"*textctr)
 			sys.stdout.write(f"\r{textstr}")
 			sys.stdout.flush()
 			with open(v, "r") as f:
@@ -1460,24 +1469,45 @@ class patcher:
 			for kline, line in enumerate(contents):
 				if line.strip().startswith(".method"):
 					methodname = line.strip().split()[-1]
+					frameworkmethod = [
+						"onStartCommand(",
+						"onBind(",
+						"onUnbind(",
+						"onDestroy(",
+						"start(",
+						"run(",
+						"join(",
+						"interrupt(",
+						"onCreate(",
+						"onStart(",
+						"onResume(",
+						"onPause(",
+						"onStop(",
+						"onDestroy(",
+						"onRestart(",
+					]
 					if "<" in methodname and "init" in methodname:
 						continue
-					randlst = rnd_wordlist()
-					putaran = 1
+					if any([x in methodname for x in frameworkmethod]):
+						continue
 					has_successed = False
 					while not has_successed:
 						for xk,xv in enumerate(randlst):
+							if len(putaran) >= len(randlst):
+								randlst = list(map(lambda x: x+x, randlst))
+								break
 							newname = xv
-							has_exists = finditem(classlist, "assigned", newname)
-							if has_exists:
+							resp = finditem(classlist, "assigned", newname)
+							if resp[1]:
+								if not resp[0] in putaran:
+									putaran.append(resp[0])
 								continue
 							tmpdata = {"class":classname,"method":methodname,"assigned":newname,"name":classname+"->"+methodname,"rename":classname+"->"+newname+"("+methodname.split("(")[1]}
 							classlist.append(tmpdata)
 							methodname = methodname.split("(")[0]
-							contents[kline] = line.replace(methodname,newname)
+							contents[kline] = line.replace(" "+methodname+"("," "+newname+"(")
 							has_successed = True
 							break
-						putaran += 1
 			with open(v,"w") as f:
 				f.write("\012".join(contents))
 			kcycle += 1
@@ -1491,7 +1521,7 @@ class patcher:
 				counter += 1
 				if kcycle >= len(cycle):
 					kcycle = 0
-				print(f"\r{cycle[kcycle]} scanning {xdir}... {counter/totalpbar*100}",end="")
+				print(f"\r{cycle[kcycle]} scanning {xdir}... {counter//totalpbar*100}",end="")
 				sys.stdout.flush()
 				with open(smalifile,"r") as smaliread:
 					codes = smaliread.read().splitlines()
@@ -1502,6 +1532,7 @@ class patcher:
 				with open(smalifile,"w") as smaliwrite:
 					smaliwrite.write("\012".join(codes))
 				kcycle += 1
+			print()
 			kcycle += 1
 		cnorm()
 
