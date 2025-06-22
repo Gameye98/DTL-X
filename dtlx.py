@@ -1645,22 +1645,47 @@ class patcher:
 		print("OK")
 		new = []
 		print("[*] writing the corresponding contract")
-		with open(self.fout+"/AndroidManifest.xml","r") as fd:
-			content = fd.read().splitlines()
-			isactivity = False
-			hasinjected = False
-			for k, v in enumerate(content):
-				new.append(v)
-				if isactivity and v.strip().endswith(">") and not hasinjected:
-					with open("assets/inject_documents_provider.xml","r") as fdesc:
-						data = fdesc.read()
-						data = data.replace("com.mycompany.application",self.getPackageName())
-						new.append(data)
-						hasinjected = True
-				if v.strip().startswith("<activity"):
-					isactivity = True
-		with open(self.fout+"/AndroidManifest.xml","w") as fd:
-			fd.write("\012".join(new))
+		tree = et.parse(self.fout+"/AndroidManifest.xml")
+		root = tree.getroot()
+		android_ns = "http://schemas.android.com/apk/res/android"
+		et.register_namespace("android",android_ns)
+		application = root.find("application")
+		activity = et.Element("activity")
+		activity.set(f"{{{android_ns}}}name","org.revengi.FilesWakeUpActivity")
+		activity.set(f"{{{android_ns}}}exported","true")
+		activity.set(f"{{{android_ns}}}taskAffinity",self.getPackageName()+".FilesWakeUp")
+		activity.set(f"{{{android_ns}}}excludeFromRecents","true")
+		activity.set(f"{{{android_ns}}}noHistory","true")
+		application.append(activity)
+		provider = et.Element("provider")
+		provider.set(f"{{{android_ns}}}name","org.revengi.FilesProvider")
+		provider.set(f"{{{android_ns}}}permission","android.permission.MANAGE_DOCUMENTS")
+		provider.set(f"{{{android_ns}}}exported","true")
+		provider.set(f"{{{android_ns}}}authorities",self.getPackageName()+".FilesProvider")
+		provider.set(f"{{{android_ns}}}grantUriPermissions","true")
+		action = et.Element("action")
+		action.set(f"{{{android_ns}}}name","android.content.action.DOCUMENTS_PROVIDER")
+		intentfilter = et.Element("intent-filter")
+		intentfilter.append(action)
+		provider.append(intentfilter)
+		application.append(provider)
+		tree.write(self.fout+"/AndroidManifest.xml", encoding="utf-8", xml_declaration=True)
+		# with open(self.fout+"/AndroidManifest.xml","r") as fd:
+			# content = fd.read().splitlines()
+			# isactivity = False
+			# hasinjected = False
+			# for k, v in enumerate(content):
+				# new.append(v)
+				# if isactivity and (v.strip().replace(" ","").startswith("</activity") or v.strip().endswith("/>")) and not hasinjected:
+					# with open("assets/inject_documents_provider.xml","r") as fdesc:
+						# data = fdesc.read()
+						# data = data.replace("com.mycompany.application",self.getPackageName())
+						# new.append(data)
+						# hasinjected = True
+				# if v.strip().startswith("<activity"):
+					# isactivity = True
+		# with open(self.fout+"/AndroidManifest.xml","w") as fd:
+			# fd.write("\012".join(new))
 		self.success("[+] contract written.")
 
 helpbanner = """     __ __   __              
