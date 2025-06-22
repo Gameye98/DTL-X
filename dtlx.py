@@ -1575,10 +1575,9 @@ class patcher:
 			fd.write("\012".join(new))
 		print("OK")
 	def getPackageName(self):
-		with open(self.fout+"/AndroidManifest.xml","r") as fd:
-			content = fd.read()
-			m = re.findall(r'package="(.*?)"', content)
-			return m[0]
+		tree = et.parse(self.fout+"/AndroidManifest.xml")
+		root = tree.getroot()
+		return root.get("package")
 	def mergeObb(self):
 		try:
 			print("\x1b[1;96m[i] Merge OBB and APK Tips\x1b[0m")
