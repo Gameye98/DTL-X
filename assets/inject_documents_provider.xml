@@ -1,0 +1,17 @@
+<activity
+	android:name="org.revengi.FilesWakeUpActivity"
+	android:exported="true"
+	android:taskAffinity="com.mycompany.application.FilesWakeUp"
+	android:excludeFromRecents="true"
+	android:noHistory="true"/>
+<provider
+	android:name="org.revengi.FilesProvider"
+	android:permission="android.permission.MANAGE_DOCUMENTS"
+	android:exported="true"
+	android:authorities="com.mycompany.application.FilesProvider"
+	android:grantUriPermissions="true">
+	<intent-filter>
+		<action
+			android:name="android.content.action.DOCUMENTS_PROVIDER"/>
+	</intent-filter>
+</provider>

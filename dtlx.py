@@ -170,6 +170,7 @@ class patcher:
 			elif args_iter=="il2cppdumper":self.il2cppdumper()
 			elif args_iter=="obfuscatemethods":self.obfuscateMethods()
 			elif args_iter=="mergeobb":self.mergeObb()
+			elif args_iter=="injectdocsprovider":self.injectDocumentsProvider()
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1357,7 +1358,7 @@ class patcher:
 			content = f.read().splitlines()
 			isapplication = False
 			mainclass = None
-			print("\x1b[1;92m[+] \x1b[1;97mlooking for Main class... \x1b[0m", end="")
+			print("\x1b[1;92m[+] \x1b[1;97mlooking for main class... \x1b[0m", end="")
 			for k, v in enumerate(content):
 				if isapplication:
 					if "android:name" in v.strip():
@@ -1540,7 +1541,7 @@ class patcher:
 		cnorm()
 	def writeStoragePermissions(self):
 		new = []
-		print("[*] write storage permissions in AndroidManifest.xml... ",end="")
+		print("[*] writing storage permissions in AndroidManifest.xml... ",end="")
 		with open(f"{self.fout}/AndroidManifest.xml","r") as fd:
 			content = fd.read().splitlines()
 			isread = any(["android.permission.READ_EXTERNAL_STORAGE" in x for x in content])
@@ -1594,7 +1595,7 @@ class patcher:
 				destdir = destdir[0:len(destdir)-1]
 			if not os.path.isdir(destdir+"/com"):
 				os.mkdir(destdir+"/com")
-			print(f"[*] copy com/save.smali to {destdir}/com... ",end="")
+			print(f"[*] copying com/save.smali to {destdir}/com... ",end="")
 			shutil.copy("assets/save.smali",destdir+"/com")
 			print("OK")
 			mainclass = self.searchMainClass()
@@ -1602,7 +1603,7 @@ class patcher:
 			mainclass = mainclass.replace(".","/")
 			mainfile  = list(glob.iglob(f"{self.fout}/**/{mainclass}.smali", recursive=True))[0]
 			self.success(f"[+] main class file: {mainfile}")
-			print("[*] add invoke-static to trigger the merging of obb and apk... ",end="")
+			print("[*] writing invoke-static to trigger the merging of obb and apk... ",end="")
 			with open(mainfile,"r") as fd:
 				content = fd.read().splitlines()
 				isoncreate = False
@@ -1622,11 +1623,45 @@ class patcher:
 				assetsdir = self.fout+"/root/assets"
 			if not os.path.isdir(assetsdir):
 				os.mkdir(assetsdir)
-			print(f"[*] copy '{obbfile}' to '{assetsdir}/res2'... ",end="")
+			print(f"[*] copying '{obbfile}' to '{assetsdir}/res2'... ",end="")
 			shutil.copy(obbfile, assetsdir+"/res2")
 			print("OK")
 		except KeyboardInterrupt:
 			self.warning("\n[!] merge obb operation is cancelled by the user...")
+	def injectDocumentsProvider(self):
+		self.writeStoragePermissions()
+		classes = self.smalidir[0]
+		while classes.endswith("/"):
+			classes = classes[0:len(classes)-1]
+		if not os.path.isdir(classes+"/org"):
+			os.mkdir(classes+"/org")
+		if not os.path.isdir(classes+"/org/revengi"):
+			os.mkdir(classes+"/org/revengi")
+		print("[*] injecting FilesProvider.smali... ",end="")
+		shutil.copy("assets/FilesProvider.smali",classes+"/org/revengi")
+		print("OK")
+		print("[*] injecting FilesWakeUpActivity.smali... ",end="")
+		shutil.copy("assets/FilesWakeUpActivity.smali",classes+"/org/revengi")
+		print("OK")
+		new = []
+		print("[*] writing the corresponding contract")
+		with open(self.fout+"/AndroidManifest.xml","r") as fd:
+			content = fd.read().splitlines()
+			isactivity = False
+			hasinjected = False
+			for k, v in enumerate(content):
+				new.append(v)
+				if isactivity and v.strip().endswith(">") and not hasinjected:
+					with open("assets/inject_documents_provider.xml","r") as fdesc:
+						data = fdesc.read()
+						data = data.replace("com.mycompany.application",self.getPackageName())
+						new.append(data)
+						hasinjected = True
+				if v.strip().startswith("<activity"):
+					isactivity = True
+		with open(self.fout+"/AndroidManifest.xml","w") as fd:
+			fd.write("\012".join(new))
+		self.success("[+] contract written.")
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1662,6 +1697,7 @@ helpbanner = """     __ __   __
 --il2cppdumper: Il2Cpp Dumper (credit: androeed.ru)
 --obfuscatemethods: Methods Identifier Obfuscation
 --mergeobb: Merge OBB and APK (credit: t.me/toyly_s)
+--injectdocsprovider: Inject Documents Provider (credit: RevEngi)
 """
 
 mainbanner = """                                                  
@@ -2129,6 +2165,8 @@ def main():
 				funcls.append("obfuscatemethods")
 			elif px == "--mergeobb":
 				funcls.append("mergeobb")
+			elif px == "--injectdocsprovider":
+				funcls.append("injectdocsprovider")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
