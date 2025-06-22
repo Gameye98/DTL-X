@@ -1670,22 +1670,6 @@ class patcher:
 		provider.append(intentfilter)
 		application.append(provider)
 		tree.write(self.fout+"/AndroidManifest.xml", encoding="utf-8", xml_declaration=True)
-		# with open(self.fout+"/AndroidManifest.xml","r") as fd:
-			# content = fd.read().splitlines()
-			# isactivity = False
-			# hasinjected = False
-			# for k, v in enumerate(content):
-				# new.append(v)
-				# if isactivity and (v.strip().replace(" ","").startswith("</activity") or v.strip().endswith("/>")) and not hasinjected:
-					# with open("assets/inject_documents_provider.xml","r") as fdesc:
-						# data = fdesc.read()
-						# data = data.replace("com.mycompany.application",self.getPackageName())
-						# new.append(data)
-						# hasinjected = True
-				# if v.strip().startswith("<activity"):
-					# isactivity = True
-		# with open(self.fout+"/AndroidManifest.xml","w") as fd:
-			# fd.write("\012".join(new))
 		self.success("[+] contract written.")
 
 helpbanner = """     __ __   __              
