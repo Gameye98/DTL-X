@@ -169,6 +169,7 @@ class patcher:
 			elif args_iter=="fixinstall":self.removeSmaliByRegex(regex_for_fix_installer)
 			elif args_iter=="il2cppdumper":self.il2cppdumper()
 			elif args_iter=="obfuscatemethods":self.obfuscateMethods()
+			elif args_iter=="mergeobb":self.mergeObb()
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1365,6 +1366,8 @@ class patcher:
 				if "<application" in v.strip():
 					isapplication = True
 			print(f"\x1b[1;93m({mainclass}) \x1b[1;92mOK\x1b[0m")
+			if mainclass.startswith("."):
+				mainclass = self.getPackageName()+mainclass
 			return mainclass
 	def il2cppdumper(self):
 		mainclass = self.searchMainClass()
@@ -1535,6 +1538,95 @@ class patcher:
 			print()
 			kcycle += 1
 		cnorm()
+	def writeStoragePermissions(self):
+		new = []
+		print("[*] write storage permissions in AndroidManifest.xml... ",end="")
+		with open(f"{self.fout}/AndroidManifest.xml","r") as fd:
+			content = fd.read().splitlines()
+			isread = any(["android.permission.READ_EXTERNAL_STORAGE" in x for x in content])
+			iswrite = any(["android.permission.WRITE_EXTERNAL_STORAGE" in x for x in content])
+			ismanage = any(["android.permission.MANAGE_EXTERNAL_STORAGE" in x for x in content])
+			requestlegacy = any(["requestLegacyExternalStorage" in x for x in content])
+			ismanifest = False
+			closetag = False
+			for k, v in enumerate(content):
+				new.append(v)
+				if ismanifest and not closetag:
+					if ">" in v:
+						closetag = True
+						if not isread:
+							new.append("<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>")
+							isread = True
+						if not iswrite:
+							new.append("<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>")
+							iswrite = True
+						if not ismanage:
+							new.append("<uses-permission android:name=\"android.permission.MANAGE_EXTERNAL_STORAGE\"/>")
+							ismanage = True
+					continue
+				if v.strip().startswith("<manifest"):
+					ismanifest = True
+				if ismanifest and closetag:
+					if v.strip().startswith("<application"):
+						if not requestlegacy:
+							new.append("android:requestLegacyExternalStorage=\"true\"")
+		with open(self.fout+"/AndroidManifest.xml","w") as fd:
+			fd.write("\012".join(new))
+		print("OK")
+	def getPackageName(self):
+		with open(self.fout+"/AndroidManifest.xml","r") as fd:
+			content = fd.read()
+			m = re.findall(r'package="(.*?)"', content)
+			return m[0]
+	def mergeObb(self):
+		try:
+			print("\x1b[1;96m[i] Merge OBB and APK Tips\x1b[0m")
+			print("\x1b[1;96m[i] You can Ctrl+C and to cancel this operation\x1b[0m")
+			print("\x1b[1;96m[i] Remember to compress the .obb file with zip'\x1b[0m")
+			obbfile = input("[*] obb path: ")
+			readline.write_history_file(dtlxhistory)
+			if not os.path.isfile(obbfile):
+				self.warning(f"dtlx: '{obbfile}': No such file exists!")
+				return
+			self.writeStoragePermissions()
+			destdir = self.smalidir[0]
+			while destdir.endswith("/"):
+				destdir = destdir[0:len(destdir)-1]
+			if not os.path.isdir(destdir+"/com"):
+				os.mkdir(destdir+"/com")
+			print(f"[*] copy com/save.smali to {destdir}/com... ",end="")
+			shutil.copy("assets/save.smali",destdir+"/com")
+			print("OK")
+			mainclass = self.searchMainClass()
+			self.success(f"[+] main class: {mainclass}")
+			mainclass = mainclass.replace(".","/")
+			mainfile  = list(glob.iglob(f"{self.fout}/**/{mainclass}.smali", recursive=True))[0]
+			self.success(f"[+] main class file: {mainfile}")
+			print("[*] add invoke-static to trigger the merging of obb and apk... ",end="")
+			with open(mainfile,"r") as fd:
+				content = fd.read().splitlines()
+				isoncreate = False
+				for k, v in enumerate(content):
+					if isoncreate:
+						if "move" in v or "invoke" in v:
+							context = v.split()[1].replace("{","").replace("}","").replace(",","")
+							content.insert(k+1,f"invoke-static {{{context}}}, Lcom/save;->a(Landroid/content/Context;)V")
+							break
+					if v.strip().startswith(".method") and "onCreate(" in v:
+						isoncreate = True
+				with open(mainfile,"w") as fd:
+					fd.write("\012".join(content))
+				print("OK")
+			assetsdir = self.fout+"/assets"
+			if self.decom_ng == 1:
+				assetsdir = self.fout+"/root/assets"
+			if not os.path.isdir(assetsdir):
+				os.mkdir(assetsdir)
+			print(f"[*] copy '{obbfile}' to '{assetsdir}/res2'... ",end="")
+			shutil.copy(obbfile, assetsdir+"/res2")
+			print("OK")
+		except KeyboardInterrupt:
+			self.warning("\n[!] merge obb operation is cancelled by the user...")
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1559,16 +1651,17 @@ helpbanner = """     __ __   __
 --noc: No compile/build the working project
 --patch <PATCHFILE>: APK PATCHER (read README_PATCH.MD for more information)
 --rmpairip: Remove Google Pairip Protection (Old Method)
---bppairip: Simple Bypass Google Pairip Protection 2024 (credit to 0xdeadc0de)
---rmvpndet: Remove VPN Detection (t.me/toyly_s)
+--bppairip: Simple Bypass Google Pairip Protection 2024 (credit: 0xdeadc0de)
+--rmvpndet: Remove VPN Detection (credit: t.me/toyly_s)
 --rmusbdebug: Remove USB Debugging
 --rmssrestrict: Remove ScreenShot Restriction
 --rmxposedvpn: Remove ROOT XPosed and VPN Packages
 --sslbypass: Bypass SSL Pinning
 --rmexportdata: Remove AppCloner Export Data Notification
---fixinstall: Fix Installer (t.me/toyly_s)
+--fixinstall: Fix Installer (credit: t.me/toyly_s)
 --il2cppdumper: Il2Cpp Dumper (credit: androeed.ru)
 --obfuscatemethods: Methods Identifier Obfuscation
+--mergeobb: Merge OBB and APK (credit: t.me/toyly_s)
 """
 
 mainbanner = """                                                  
@@ -2034,6 +2127,8 @@ def main():
 				funcls.append("il2cppdumper")
 			elif px == "--obfuscatemethods":
 				funcls.append("obfuscatemethods")
+			elif px == "--mergeobb":
+				funcls.append("mergeobb")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
