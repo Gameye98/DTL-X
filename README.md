@@ -63,6 +63,7 @@ If you are interested in reversing or patching Android applications, then I reco
 --obfuscatemethods: Methods Identifier Obfuscation  
 --mergeobb: Merge OBB and APK (credit: t.me/toyly_s)  
 --injectdocsprovider: Inject Documents Provider (credit: RevEngi)  
+--changeactivity: Change Main Activity  
 ```
 
 **• note 1: remove any whitespace found on the apk file name before patching**  

@@ -171,6 +171,7 @@ class patcher:
 			elif args_iter=="obfuscatemethods":self.obfuscateMethods()
 			elif args_iter=="mergeobb":self.mergeObb()
 			elif args_iter=="injectdocsprovider":self.injectDocumentsProvider()
+			elif args_iter=="changeactivity":self.changeActivity()
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1354,22 +1355,20 @@ class patcher:
 				print("\x1b[1;92m[+] bppairip: \x1b[1;93mlibpairipcoree.so has been added!\x1b[0m")
 				break
 	def searchMainClass(self):
-		with open(f"{self.fout}/AndroidManifest.xml","r") as f:
-			content = f.read().splitlines()
-			isapplication = False
-			mainclass = None
-			print("\x1b[1;92m[+] \x1b[1;97mlooking for main class... \x1b[0m", end="")
-			for k, v in enumerate(content):
-				if isapplication:
-					if "android:name" in v.strip():
-						mainclass = re.findall(r'"(.*?)"', v)[0]
-						break
-				if "<application" in v.strip():
-					isapplication = True
-			print(f"\x1b[1;93m({mainclass}) \x1b[1;92mOK\x1b[0m")
-			if mainclass.startswith("."):
-				mainclass = self.getPackageName()+mainclass
-			return mainclass
+		android_ns = "http://schemas.android.com/apk/res/android"
+		et.register_namespace("android", android_ns)
+		tree = et.parse(self.fout+"/AndroidManifest.xml")
+		root = tree.getroot()
+		application = root.find("application")
+		activities = application.findall("activity")
+		for activity in activities:
+			if activity.find("intent-filter") is not None:
+				if activity.find("intent-filter").find("action") is not None:
+					if activity.find("intent-filter").find("action").get(f"{{{android_ns}}}name") == "android.intent.action.MAIN":
+						mainclass = activity.get(f"{{{android_ns}}}name")
+						if mainclass.startswith("."):
+							return self.getPackageName()+mainclass
+						return mainclass
 	def il2cppdumper(self):
 		mainclass = self.searchMainClass()
 		mainclass = mainclass.replace(".","/")
@@ -1670,6 +1669,41 @@ class patcher:
 		application.append(provider)
 		tree.write(self.fout+"/AndroidManifest.xml", encoding="utf-8", xml_declaration=True)
 		self.success("[+] contract written.")
+	def changeActivity(self):
+		android_ns = "http://schemas.android.com/apk/res/android"
+		et.register_namespace("android", android_ns)
+		tree = et.parse(self.fout+"/AndroidManifest.xml")
+		root = tree.getroot()
+		application = root.find("application")
+		activities = application.findall("activity")
+		self.success(f"[+] Main Activity: "+self.searchMainClass())
+		for k, v in enumerate(activities):
+			print(f" [{k}] "+v.get(f"{{{android_ns}}}name"))
+		while True:
+			pickactivity = input("[*] Pick activity to replace current main activity: ")
+			try:
+				pickactivity = int(pickactivity)
+				break
+			except TypeError:
+				self.warning(f"[!] dtlx: '{pickactivity}': Input should be an Integer or Number")
+		print("[*] changing activity ...")
+		haschanged = False
+		for k, activity in enumerate(activities):
+			if activity.find("intent-filter") is not None:
+				if activity.find("intent-filter").find("action") is not None:
+					action = activity.find("intent-filter").find("action")
+					action = action.get(f"{{{android_ns}}}name")
+					if action == "android.intent.action.MAIN":
+						mainactivity = activity.get(f"{{{android_ns}}}name")
+						activity.set(f"{{{android_ns}}}name",activities[pickactivity].get(f"{{{android_ns}}}name"))
+						activities[pickactivity].set(f"{{{android_ns}}}name", mainactivity)
+						haschanged = True
+						break
+		if haschanged:
+			tree.write(self.fout+"/AndroidManifest.xml", encoding="utf-8", xml_declaration=True)
+			self.success("[+] activity changed.")
+		else:
+			self.warning("[!] something went unexpected!")
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1706,6 +1740,7 @@ helpbanner = """     __ __   __
 --obfuscatemethods: Methods Identifier Obfuscation
 --mergeobb: Merge OBB and APK (credit: t.me/toyly_s)
 --injectdocsprovider: Inject Documents Provider (credit: RevEngi)
+--changeactivity: Change Main Activity
 """
 
 mainbanner = """                                                  
@@ -2175,6 +2210,8 @@ def main():
 				funcls.append("mergeobb")
 			elif px == "--injectdocsprovider":
 				funcls.append("injectdocsprovider")
+			elif px == "--changeactivity":
+				funcls.append("changeactivity")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
