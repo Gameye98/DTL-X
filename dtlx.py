@@ -15,6 +15,8 @@ cnorm = lambda: os.system("tput cnorm")
 cols = lambda: int(os.popen("tput cols").read().strip())
 loading = ["|","/","-","\\"]
 dtlxhistory = ".dtlx_history"
+ascii_letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ascii_letters = [x for x in ascii_letters]
 
 def rnd_wordlist():
 	with open("randomlist.txt","r") as f:
@@ -26,6 +28,12 @@ def randomid():
 	randomstr = ""
 	while len(randomstr) < 6:
 		randomstr += str(random.choice(list(range(0,10))))
+	return randomstr
+
+def randomletters():
+	randomstr = ""
+	while len(randomstr) < 6:
+		randomstr += str(random.choice(ascii_letters))
 	return randomstr
 
 def delete_recursively(path):
@@ -172,6 +180,8 @@ class patcher:
 			elif args_iter=="mergeobb":self.mergeObb()
 			elif args_iter=="injectdocsprovider":self.injectDocumentsProvider()
 			elif args_iter=="changeactivity":self.changeActivity()
+			elif args_iter=="changepackagename":self.changePkgName()
+			elif args_iter=="cloneapk":self.cloneApk()
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1704,6 +1714,49 @@ class patcher:
 			self.success("[+] activity changed.")
 		else:
 			self.warning("[!] something went unexpected!")
+	def changePackageName(self,packagename):
+		oldpkgname = self.getPackageName()
+		oldclassname = oldpkgname.replace(".","/")
+		newclassname = packagename.replace(".","/")
+		f_ls = list(glob.iglob(f"{self.fout}/**/*.*",recursive=True))
+		totalpbar = len(f_ls)
+		pbar = progressbar.ProgressBar(totalpbar).start()
+		counter = 0
+		civis()
+		for ffile in f_ls:
+			counter += 1
+			pbar.update(counter)
+			try:
+				with open(ffile,"r") as f:
+					content = f.read().splitlines()
+					for k, v in enumerate(content):
+						if oldpkgname in v:
+							content[k] = v.replace(oldpkgname,packagename)
+						elif oldclassname in v:
+							content[k] = v.replace(oldclassname,newclassname)
+				with open(ffile,"w") as f:
+					f.write("\012".join(content))
+			except UnicodeDecodeError:
+				pass
+		pbar.finish()
+		cnorm()
+	def changePkgName(self):
+		userpkg = input("[*] new package name: ")
+		print("[*] changing package name...")
+		readline.write_history_file(dtlxhistory)
+		self.changePackageName(userpkg)
+	def cloneApk(self):
+		packagename = self.getPackageName()
+		randtext = randomletters()
+		packagename = packagename+"."+randtext
+		# if packagename.count(".") < 2:
+			# packagename = packagename+"."+randtext
+		# else:
+			# while not packagename.endswith("."):
+				# packagename = packagename[0:len(packagename)-1]
+			# packagename = packagename+"."+randtext
+		print("[*] cloning apk...")
+		self.changePackageName(packagename)
 
 helpbanner = """     __ __   __              
  ,__|  |  |_|  |___ __ __
@@ -1741,6 +1794,8 @@ helpbanner = """     __ __   __
 --mergeobb: Merge OBB and APK (credit: t.me/toyly_s)
 --injectdocsprovider: Inject Documents Provider (credit: RevEngi)
 --changeactivity: Change Main Activity
+--changepkgname: Change Package Name
+--cloneapk: Clone APK
 """
 
 mainbanner = """                                                  
@@ -2212,6 +2267,10 @@ def main():
 				funcls.append("injectdocsprovider")
 			elif px == "--changeactivity":
 				funcls.append("changeactivity")
+			elif px == "--changepkgname":
+				funcls.append("changepackagename")
+			elif px == "--cloneapk":
+				funcls.append("cloneapk")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")

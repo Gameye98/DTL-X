@@ -1,4 +1,4 @@
-apt install python git ncurses-utils apksigner openjdk-17 unzip zip
+apt install python git ncurses-utils apksigner openjdk-17 unzip zip dexdump
 apt install aapt aapt2 -y
 python -m pip install progressbar
 cp assets/aapt $PREFIX/bin

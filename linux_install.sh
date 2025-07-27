@@ -1,4 +1,4 @@
-sudo apt install python3 git apksigner openjdk-17-jdk-headless unzip zip
+sudo apt install python3 git apksigner openjdk-17-jdk-headless unzip zip dexdump
 bash install_ncurses.sh
 sudo apt install aapt aapt2 -y
 python3 -m pip install progressbar --break-system-packages

@@ -64,6 +64,8 @@ If you are interested in reversing or patching Android applications, then I reco
 --mergeobb: Merge OBB and APK (credit: t.me/toyly_s)  
 --injectdocsprovider: Inject Documents Provider (credit: RevEngi)  
 --changeactivity: Change Main Activity  
+--changepkgname: Change Package Name  
+--cloneapk: Clone APK  
 ```
 
 **• note 1: remove any whitespace found on the apk file name before patching**  
