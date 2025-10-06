@@ -12,7 +12,7 @@ from assets.dexRepair import repair_dex, DexRepairError
 endl = "\012"
 civis = lambda: os.system("tput civis")
 cnorm = lambda: os.system("tput cnorm")
-cols = lambda: int(os.popen("tput cols").read().strip())
+cols = os.get_terminal_size().columns
 loading = ["|","/","-","\\"]
 dtlxhistory = ".dtlx_history"
 ascii_letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -305,17 +305,18 @@ class patcher:
 					open(fx,"w").write(self.ffx)
 	def removeAds4(self):
 		for x in self.smalidir:
-			self.f_ls = subprocess.run(f"find {x}/",shell=True,check=True,stdout=subprocess.PIPE).stdout.decode().split(self.endl)
-			self.f_ls = list(filter(lambda x: not x.startswith(".") and x.strip() != "", self.f_ls))
+			# self.f_ls = subprocess.run(f"find {x}/",shell=True,check=True,stdout=subprocess.PIPE).stdout.decode().split(self.endl)
+			# self.f_ls = list(filter(lambda x: not x.startswith(".") and x.strip() != "", self.f_ls))
+			self.f_ls = list(glob.iglob(f"{x}/**/*.smali",recursive=True))
 			for fx in self.f_ls:
-				if os.path.isfile(fx) and "/ads/" in fx and fx.endswith(".smali"):
+				if os.path.isfile(fx) and fx.endswith(".smali"):
 					self.ffx = open(fx,"r").read()
 					self.readperline = self.ffx.strip().split(endl)
 					while "" in self.readperline:
 						self.readperline.remove("")
 					self.modifiedsourcefile = ""
 					for rpl_iterx in self.readperline:
-						if "invoke" in rpl_iterx:
+						if "invoke" in rpl_iterx and "gms" in rpl_iterx:
 							for rpl_itery in strmatch["adloader"]:
 								if rpl_itery in rpl_iterx:
 									if rpl_iterx.strip().endswith(")V"):
