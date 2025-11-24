@@ -77,7 +77,7 @@ If you are interested in reversing or patching Android applications, then I reco
 
 ## Screenshot
 <img src="assets/screenshot.png">  
-<img src="Screenshot_2025-11-24-21-41-28-410_com.termux.x11.jpg">
+<img src="assets/Screenshot_2025-11-24-21-41-28-410_com.termux.x11.jpg">
 
 ### Requirements
 • python 3.x  
