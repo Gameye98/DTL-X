@@ -547,7 +547,7 @@ class patcher:
 		self.cleanManifest(class_name)
 	def cleanSplitApks(self):
 		manifestxml = open(self.fout+"/AndroidManifest.xml","r").read()
-		rmattrbs = ["requiredSplitTypes", "splitTypes", "extractNativeLibs", "isSplitRequired"]
+		rmattrbs = ["requiredSplitTypes", "splitTypes", "isSplitRequired"]
 		for kw in rmattrbs:
 			m = re.findall(rf'(android:{kw}\=\"(.*?)\")', manifestxml)
 			if len(m) > 0 and len(m[0]) > 0:
