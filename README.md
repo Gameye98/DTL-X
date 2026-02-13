@@ -67,6 +67,7 @@ If you are interested in reversing or patching Android applications, then I reco
 --changeactivity: Change Main Activity  
 --changepkgname: Change Package Name  
 --cloneapk: Clone APK  
+--rmcreg: Remove Country Registration  
 ```
 
 **• note 1: remove any whitespace found on the apk file name before patching**  

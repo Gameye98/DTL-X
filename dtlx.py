@@ -182,6 +182,7 @@ class patcher:
 			elif args_iter=="changeactivity":self.changeActivity()
 			elif args_iter=="changepackagename":self.changePkgName()
 			elif args_iter=="cloneapk":self.cloneApk()
+			elif args_iter=="rmcountryreg":self.removeSmaliByRegex(regex_for_country_registration_removal)
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1797,6 +1798,7 @@ helpbanner = """     __ __   __
 --changeactivity: Change Main Activity
 --changepkgname: Change Package Name
 --cloneapk: Clone APK
+--rmcreg: Remove Country Registration
 """
 
 mainbanner = """                                                  
@@ -1946,6 +1948,20 @@ regex_for_pairip = [
 		r'.*invoke.*pairip.*\)Z.*',
 		r'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z'
 	]
+]
+regex_for_country_registration_removal = [
+	[
+        r'(getNetworkOperatorName|getSimOperatorName).+Ljava.lang.String;\n+\s+move-result-object ([vp]\d+)',
+        r'\1\()\Ljava\/lang\/String;\n\n\ \ \ \ const-string \2, "T-Mobile"'
+    ],
+	[
+        r'(getSimOperator|getNetworkOperator).+Ljava.lang.String;\n+\s+move-result-object ([vp]\d+)',
+        r'\1\()\Ljava\/lang\/String;\n\n\ \ \ \ const-string \2, "310160"'
+    ],
+	[
+        r'(getSimCountryIso|getNetworkCountryIso).+Ljava.lang.String;\n+\s+move-result-object ([vp]\d+)',
+        r'\1\()\Ljava\/lang\/String;\n\n\ \ \ \ const-string \2, "us"'
+    ]
 ]
 strmatch = {
 	"adloader": (
@@ -2272,6 +2288,8 @@ def main():
 				funcls.append("changepackagename")
 			elif px == "--cloneapk":
 				funcls.append("cloneapk")
+			elif px == "--rmcreg":
+				funcls.append("rmcountryreg")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")
