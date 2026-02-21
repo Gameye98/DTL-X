@@ -534,8 +534,8 @@ class patcher:
 					reg = re.findall(regex[0],smalicodes)
 					if len(reg) > 0:
 						regtext = f"\x1b[1;94m[*] regex: {regex[0]}\x1b[0m"
-						if len(regtext) < cols():
-							print(regtext+" "*(cols()-len(regtext)))
+						if len(regtext) < cols:
+							print(regtext+" "*(cols-len(regtext)))
 						print(f"\x1b[1;92m[+] found: {file}\x1b[0m")
 						smalicodes = re.sub(regex[0],regex[1],smalicodes)
 						print(f"\x1b[1;41;93m[!] result: {reg[0]}\x1b[0m")
@@ -1048,8 +1048,8 @@ class patcher:
 					reg = re.findall(regex[0],smalicodes)
 					if len(reg) > 0:
 						regtext = f"\x1b[1;94m[*] regex: {regex[0]}\x1b[0m"
-						if len(regtext) < cols():
-							print(regtext+" "*(cols()-len(regtext)))
+						if len(regtext) < cols:
+							print(regtext+" "*(cols-len(regtext)))
 						print(f"\x1b[1;92m[+] found: {file}\x1b[0m")
 						smalicodes = re.sub(regex[0],regex[1],smalicodes)
 						print(f"\x1b[1;41;93m[!] result: {reg[0]}\x1b[0m")
@@ -1106,8 +1106,8 @@ class patcher:
 					reg = re.findall(regex[0],smalicodes)
 					if len(reg) > 0:
 						regtext = f"\x1b[1;94m[*] regex: {regex[0]}\x1b[0m"
-						if len(regtext) < cols():
-							print(regtext+" "*(cols()-len(regtext)))
+						if len(regtext) < cols:
+							print(regtext+" "*(cols-len(regtext)))
 						print(f"\x1b[1;92m[+] found: {file}\x1b[0m")
 						smalicodes = re.sub(regex[0],regex[1],smalicodes)
 						print(f"\x1b[1;41;93m[!] result: {reg[0]}\x1b[0m")
@@ -1230,7 +1230,7 @@ class patcher:
 					if i in smalicodes:
 						smalicodes = smalicodes.replace(i,"")
 					pathfile = f"\x1b[1;92m[+] found: {file}\x1b[0m"
-					while len(pathfile) < cols():
+					while len(pathfile) < cols:
 						pathfile = pathfile+" "
 					print(pathfile)
 					ismodify = True
@@ -1469,9 +1469,9 @@ class patcher:
 				kcycle = 0
 			textstr = f"{cycle[kcycle]} register methods - {lstfiles[k]}"
 			prevlen = len(textstr) if len(textstr) > prevlen else prevlen
-			#textstr = textstr+" "*(cols()-len(textstr) if cols() > len(textstr) else 0)
+			#textstr = textstr+" "*(cols-len(textstr) if cols > len(textstr) else 0)
 			textstr = textstr+" "*prevlen
-			textctr = len(textstr)//cols() if len(textstr) > cols() else 0
+			textctr = len(textstr)//cols if len(textstr) > cols else 0
 			textctr = textctr if textctr > textstr.count("\012") else textctr + textstr.count("\012")
 			sys.stdout.write("\x1b[F"*textctr)
 			sys.stdout.write(f"\r{textstr}")
