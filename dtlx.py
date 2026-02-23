@@ -183,6 +183,7 @@ class patcher:
 			elif args_iter=="changepackagename":self.changePkgName()
 			elif args_iter=="cloneapk":self.cloneApk()
 			elif args_iter=="rmcountryreg":self.removeSmaliByRegex(regex_for_country_registration_removal)
+			elif args_iter=="t4adremover":self.removeSmaliByRegex(t4adremover_patterns)
 		# Compile Project
 		if self.iscompile:
 			if os.path.isdir(f"{self.fout}/resources"):
@@ -1799,6 +1800,7 @@ helpbanner = """     __ __   __
 --changepkgname: Change Package Name
 --cloneapk: Clone APK
 --rmcreg: Remove Country Registration
+--t4adremover: Very Powerful Ad Remover (credit: github.com/tausifzaman)
 """
 
 mainbanner = """                                                  
@@ -1962,6 +1964,48 @@ regex_for_country_registration_removal = [
         r'(getSimCountryIso|getNetworkCountryIso).+Ljava.lang.String;\n+\s+move-result-object ([vp]\d+)',
         r'\1\()\Ljava\/lang\/String;\n\n\ \ \ \ const-string \2, "us"'
     ]
+]
+t4adremover_patterns = [
+    # [1] Void Methods
+    (
+        r'(\.method\s(?:public|private|static)\s\b(?!\babstract|native\b)(?:.*)?(?:loadAd|renderAd|Ad(?:Clicked|Dismissed|Shown))\(.*\)V\n\s+\.registers \d+)[\s\S]*?(?:return-void|[\s\S]*?throw.*)?(?:\s+\.end method)',
+        r'\1\n    return-void\n.end method'
+    ),
+    # [2] Boolean Methods
+    (
+        r'(\.method\s(?:public|private|static)\s\b(?!\babstract|native\b)(?:.*)?loadAd\(.*\)Z\n\s+\.registers \d+)[\s\S]*?(?:\.end method)',
+        r'\1\n    const/4 v0, 0x0\n    return v0\n.end method'
+    ),
+    # [3] Invoke Methods
+    (
+        r'(invoke.*gms.*\>(loadUrl|loadDataWithBaseURL|requestInterstitialAd|showInterstitial|showVideo|showAd|loadData|onAdClicked|onAdLoaded|isLoading|loadAds|AdLoader|AdRequest|AdListener|AdView).*V)|(((invoke.*/ads/.*>((load|show)(Ad(s)?)?)\(.*\)V)|(invoke.*loadAd\(.*\)[VZ])))',
+        r'# \g<0>'
+    ),
+    # [4] Domain URLs
+    (
+        r'\"(http.*|//.*)(61\.145\.124\.238|\-ads\.|\.ad\.|\.ads\.|\.analytics\.localytics\.com|\.mobfox\.com|\.mp\.mydas\.mobi|\.plus1\.wapstart\.ru|\.scorecardresearch\.com|\.startappservice\.com|\/ad\.|\/ads|ad\-mail|ad\.*\_logging|ad\.api\.kaffnet\.com|adc3\-launch|adcolony|adinformation|adkmob|admax|admob|admost|adsafeprotected|adservice|adtag|advert|adwhirl|adz\.wattpad\.com|alta\.eqmob\.com|amazon\-*ads|amazon\.*ads|amobee|analytics|applovin|applvn|appnext|appodeal|appsdt|appsflyer|burstly|cauly|cloudfront|com\.google\.android\.gms\.ads\.identifier\.service\.START|crashlytics|crispwireless|doubleclick|dsp\.batmobil\.net|duapps|dummy|flurry|gad|getads|google\.com\/dfp|googleAds|googleads|googleapis\.*\.ad\-*|googlesyndication|googletagmanager|greystripe|gstatic|inmobi|inneractive|jumptag|live\.chartboost\.com|madnet|millennialmedia|moatads|mopub|native\_ads|pagead|pubnative|smaato|supersonicads|tapas|tapjoy|unityads|vungle|zucks).*\"',
+        r'"U Can\'t See Me"'
+    ),
+    # [5] App ID replacement
+    (
+        r'ca-app-pub-\d{16}/\d{10}',
+        r'ca-app-pub-0000000000000000/0000000000'
+    ),
+    # [6] Invoke replacement
+    (
+        r'(invoke-.*\{.*\}, L.*;->(loadAd|requestNativeAd|showInterstitial|\b(?:fetchad)\b|fetchads|onadloaded|requestInterstitialAd|showAd|loadAds|AdRequest|requestBannerAd|loadNextAd|createInterstitialAd|setNativeAd|loadBannerAd|loadNativeAd|loadRewardedAd|loadRewardedInterstitialAd|loadAds|loadAdViewAd|showInterstitialAd|shownativead|showbannerad|showvideoad|onAdFailedToLoad|AdListener|displayAdEventLoaded|failedToReceiveAd|failedToReceiveAdV2|fetchAdWithLocation|loadAdFromNetwork|loadAdFromUb|loadAdInternal|loadAdvertisement|loadAppOpenAd|loadInterscrollerAd|loadInterstitialAd|loadNativeAdForBidding|loadNextAdForAdToken|loadNextAdForZoneId|loadRewardedVideo|loadRewardedVideoForDemandOnly|loadSmartBanner|onAdClicked|onAdClosed|onAdCollapsed|onAdDisplayed|onAdDisplayFailed|onAdDismissedFullScreenContent|onAdFailed|onAdFailedToShow|onAdFailedToShowFullScreenContent|onAdHidden|onAdImpression|onAdLeftApplication|onAdOpen|onAdOpened|onAdRewarded|onAdRevenuePaid|onAdRequestStarted|onAdShowedFullScreenContent|onAppOpenAdLoadFailed|onInterstitialAdLoaded|onInterstitialAdLoadFailed|onInterstitialAdRewarded|onNativeAdClicked|onNativeAdLoaded|onNativeAdLoadFailed|onNativeAdShown|onRewardedAdClosed|onRewardedAdDisplayFailed|onRewardedAdFailedToLoad|onRewardedAdFailedToShow|onRewardedAdLoaded|onRewardedAdOpened|onRewardedVideoAdClicked|onRewardedVideoAdClosed|onRewardedVideoAdEnded|onRewardedVideoAdFailedToLoad|onRewardedVideoAdLoaded|onRewardedVideoAdOpened|onRewardedVideoAdRewarded|onRewardedVideoAdShowFailed|onRewardedVideoAdStarted|onUnifiedNativeAdLoaded|onUserEarnedReward|reportAdClicked|reportAdImpression|resumeBanner|setAdListener|setRewardedVideoAdListener|showBannerAndNative|showHideAds|showNativeInterstitial|showOfferwall|showRewardedVideo|showRewardedVideoAd|startAdSession|unsetNativeAd|vpaidAdImpression|vpaidAdInteraction|vpaidAdLoaded).*$(\s*move-result-object.*)?|invoke-.* \{.*\}, Lcom.*;->(requestInterstitialAd(.*)V|loadAds(.*)V|loadAd.*(\s*move-result-object.*)?|requestBannerAd(.*)V)|invoke-.* \{.*\}, (Lcom/facebook.*;->show(.*)(\s+move-result.*)?))',
+        r'nop'
+    ),
+    # [7] Huge Method Replacer
+    (
+        r'(\.method.*\b(loadAd|requestNativeAd|showInterstitial|fetchad|fetchads|onadloaded|requestInterstitialAd|showAd|loadAds|AdRequest|requestBannerAd|loadNextAd|createInterstitialAd|setNativeAd|loadBannerAd|loadNativeAd|loadRewardedAd|loadRewardedInterstitialAd|loadAds|loadAdViewAd|showInterstitialAd|shownativead|showbannerad|showvideoad|onAdFailedToLoad|AdListener|displayAdEventLoaded|failedToReceiveAd|failedToReceiveAdV2|fetchAdWithLocation|loadAdFromNetwork|loadAdFromUb|loadAdInternal|loadAdvertisement|loadAppOpenAd|loadInterscrollerAd|loadInterstitialAd|loadNativeAdForBidding|loadNextAdForAdToken|loadNextAdForZoneId|loadRewardedVideo|loadRewardedVideoForDemandOnly|loadSmartBanner|onAdClicked|onAdClosed|onAdCollapsed|onAdDisplayed|onAdDisplayFailed|onAdDismissedFullScreenContent|onAdFailed|onAdFailedToShow|onAdFailedToShowFullScreenContent|onAdHidden|onAdImpression|onAdLeftApplication|onAdOpen|onAdOpened|onAdRewarded|onAdRevenuePaid|onAdRequestStarted|onAdShowedFullScreenContent|onAppOpenAdLoadFailed|onInterstitialAdLoaded|onInterstitialAdLoadFailed|onInterstitialAdRewarded|onNativeAdClicked|onNativeAdLoaded|onNativeAdLoadFailed|onNativeAdShown|onRewardedAdClosed|onRewardedAdDisplayFailed|onRewardedAdFailedToLoad|onRewardedAdFailedToShow|onRewardedAdLoaded|onRewardedAdOpened|onRewardedVideoAdClicked|onRewardedVideoAdClosed|onRewardedVideoAdEnded|onRewardedVideoAdFailedToLoad|onRewardedVideoAdLoaded|onRewardedVideoAdOpened|onRewardedVideoAdRewarded|onRewardedVideoAdShowFailed|onRewardedVideoAdStarted|onUnifiedNativeAdLoaded|onUserEarnedReward|reportAdClicked|reportAdImpression|resumeBanner|setAdListener|setRewardedVideoAdListener|showBannerAndNative|showHideAds|showNativeInterstitial|showOfferwall|showRewardedVideo|showRewardedVideoAd|startAdSession|unsetNativeAd|vpaidAdImpression|vpaidAdInteraction|vpaidAdLoaded)\b\(.*\)V\n\s+\.registers \d+)[\s\S]*?\.end method',
+        r'\1\n    return-void\n.end method'
+    ),
+    # [8] onCreate Ad bypass
+    (
+        r'(\.method protected final onCreate\(Landroid\/os\/Bundle;\)V[\s|\S]*?iput-object.*AdActivity.*[\s|\S]*?)if-(?:nez|eqz).*, :cond_(.*)',
+        r'\1goto :cond_\2'
+    )
 ]
 strmatch = {
 	"adloader": (
@@ -2290,6 +2334,8 @@ def main():
 				funcls.append("cloneapk")
 			elif px == "--rmcreg":
 				funcls.append("rmcountryreg")
+			elif px == "--t4adremover":
+				funcls.append("t4adremover")
 		if ispatch:
 			if not os.path.isfile(patchfile):
 				print(f"\x1b[1;41;93m[!] dtlx: '{patchfile}': No such file exists\x1b[0m")

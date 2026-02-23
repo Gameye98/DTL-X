@@ -68,6 +68,7 @@ If you are interested in reversing or patching Android applications, then I reco
 --changepkgname: Change Package Name  
 --cloneapk: Clone APK  
 --rmcreg: Remove Country Registration  
+--t4adremover: Very Powerful Ad Remover (credit: github.com/tausifzaman)  
 ```
 
 **• note 1: remove any whitespace found on the apk file name before patching**  
