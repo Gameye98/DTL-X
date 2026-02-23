@@ -1104,15 +1104,15 @@ class patcher:
 					ldc = 0
 				smalicodes = open(file,"r").read()
 				for regex in regexList:
-					reg = re.findall(regex[0],smalicodes)
-					if len(reg) > 0:
+					reg = list(re.finditer(regex[0],smalicodes))
+					if len(reg):
 						regtext = f"\x1b[1;94m[*] regex: {regex[0]}\x1b[0m"
 						if len(regtext) < cols:
 							print(regtext+" "*(cols-len(regtext)))
 						print(f"\x1b[1;92m[+] found: {file}\x1b[0m")
-						smalicodes = re.sub(regex[0],regex[1],smalicodes)
-						print(f"\x1b[1;41;93m[!] result: {reg[0]}\x1b[0m")
-						print(f"\x1b[1;93m[~] replacement: '{regex[1]}'\x1b[0m\n")
+						smalicodes,n = re.subn(regex[0],regex[1],smalicodes)
+						print(f"\x1b[1;41;93m[!] result: {reg[0].group(0)}\x1b[0m")
+						print(f"\x1b[1;93m[~] replacement: '{n}'\x1b[0m\n")
 						print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
 				with open(file,"w") as sw:
 					sw.write(smalicodes)
