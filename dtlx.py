@@ -1097,7 +1097,7 @@ class patcher:
 			ldc = 0
 			for file in self.f_ls:
 				counter += 1
-				print(f"\r\x1b[1;93m[{loading[ldc]}] scan dirs: {smalixdir} ({counter}/{totalpbar} files)\x1b[0m   ",end="")
+				#print(f"\r\x1b[1;93m[{loading[ldc]}] scan dirs: {smalixdir} ({counter}/{totalpbar} files)\x1b[0m   ",end="")
 				sys.stdout.flush()
 				ldc += 1
 				if ldc >= len(loading):
@@ -1105,15 +1105,19 @@ class patcher:
 				smalicodes = open(file,"r").read()
 				hasmodified = False
 				for regex in regexList:
-					regtext = f"\x1b[1;94m[*] regex: {regex[0]}\x1b[0m"
-					if len(regtext) < cols:
-						print(regtext+" "*(cols-len(regtext)))
-					print(f"\x1b[1;92m[+] found: {file}\x1b[0m")
-					smalicodes, n = re.subn(regex[0],regex[1],smalicodes)
-					if n:
+					matches = re.findall(regex[0],smalicodes)
+					matches = list(filter(lambda x: x[0], matches))
+					if len(matches) > 0:
+						smalicodes = re.sub(regex[0],regex[1],smalicodes)
+						print(f"\x1b[1;96m[*] \x1b[97mregex: \x1b[0;92m{regex[0]}\x1b[0m")
+						for result in matches:
+							if not isinstance(result,tuple):
+								print(f"\x1b[1;93m[-] \x1b[97mfound: \x1b[0;41;93m{result}\x1b[0m")
+							else:
+								print(f"\x1b[1;93m[-] \x1b[97mfound: \x1b[0;41;93m{result[0]}\x1b[0m")
+						print(f"\x1b[1;93m[-] \x1b[97mfile: \x1b[93m{file}\x1b[0m")
+						print(f"\x1b[1;92m[+] \x1b[97mreplacement: \x1b[1;92m'{regex[1]}'\x1b[0m\n")
 						hasmodified = True
-					print(f"\x1b[1;93m[~] replacement: '{regex[1]}'\x1b[0m\n")
-					print(f"\x1b[1;96m[*] scan dirs: {smalixdir} ({totalpbar} files)\x1b[0m")
 				if hasmodified:
 					with open(file,"w") as sw:
 						sw.write(smalicodes)
