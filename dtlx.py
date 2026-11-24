@@ -6,8 +6,68 @@ import shutil
 import subprocess
 import readline, copy
 import progressbar
+import multiprocessing
 import xml.etree.ElementTree as et
 from assets.dexRepair import repair_dex, DexRepairError
+
+CPU_COUNT = multiprocessing.cpu_count()
+
+def _tracker_file_worker(args):
+	file, class_patterns = args
+	smalicodes = open(file,"r").read()
+	modified = False
+	for class_name, patterns in class_patterns.items():
+		if class_name not in smalicodes:
+			continue
+		for regex, replacement in patterns:
+			if regex.search(smalicodes):
+				smalicodes = regex.sub(replacement,smalicodes)
+				modified = True
+	if modified:
+		with open(file,"w") as sw:
+			sw.write(smalicodes)
+	return (file, modified)
+
+def _ads4_file_worker(fx):
+	ffx = open(fx,"r").read()
+	readperline = ffx.strip().split(endl)
+	while "" in readperline:
+		readperline.remove("")
+	modifiedsourcefile = ""
+	modified_this_file = False
+	for rpl_iterx in readperline:
+		if "invoke" in rpl_iterx and "gms" in rpl_iterx:
+			for rpl_itery in strmatch["adloader"]:
+				if rpl_itery in rpl_iterx:
+					if rpl_iterx.strip().endswith(")V"):
+						rpl_iterx = rpl_iterx.replace(rpl_iterx.strip(),"invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()V")
+						modified_this_file = True
+					elif rpl_iterx.strip().endswith(")Z"):
+						rpl_iterx = rpl_iterx.replace(rpl_iterx.strip(),"invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z")
+						modified_this_file = True
+		elif "const-string-still-fix-issue" in rpl_iterx:
+			constvar = re.findall(r"const-string\s(v[0-9]+|p[0-9]+),\s\"(.*?)\"", rpl_iterx)[0][0]
+			rpl_iterx = rpl_iterx.replace(rpl_iterx.strip(),f"const-string {constvar}, \"null\"")
+			modified_this_file = True
+		modifiedsourcefile += rpl_iterx+endl
+	if modified_this_file:
+		open(fx,"w").write(modifiedsourcefile)
+	return (fx, modified_this_file)
+
+def _regex_file_worker(args):
+	file, regexList = args
+	smalicodes = open(file,"r").read()
+	hasmodified = False
+	for regex in regexList:
+		matches = re.findall(regex[0],smalicodes)
+		matches = list(filter(lambda x: x[0], matches))
+		if len(matches) > 0:
+			smalicodes = re.sub(regex[0],regex[1],smalicodes)
+			hasmodified = True
+	if hasmodified:
+		with open(file,"w") as sw:
+			sw.write(smalicodes)
+	return (file, hasmodified)
 
 endl = "\012"
 civis = lambda: os.system("tput civis")
@@ -254,10 +314,8 @@ class patcher:
 				f.write(updatedxml)
 	def warning(self,content):
 		print(f"\x1b[1;41;93m{content}\x1b[0m")
-		__import__("time").sleep(0.1)
 	def success(self,content):
 		print(f"\x1b[1;92m{content}\x1b[0m")
-		__import__("time").sleep(0.1)
 	def writeManifestXML(self):
 		if len(self.manifestxml.split("</manifest>")) > 1:
 			self.manifestxml = self.manifestxml.split("</manifest>")[0]+"</manifest>"
@@ -307,38 +365,12 @@ class patcher:
 					open(fx,"w").write(self.ffx)
 	def removeAds4(self):
 		for x in self.smalidir:
-			# self.f_ls = subprocess.run(f"find {x}/",shell=True,check=True,stdout=subprocess.PIPE).stdout.decode().split(self.endl)
-			# self.f_ls = list(filter(lambda x: not x.startswith(".") and x.strip() != "", self.f_ls))
 			self.f_ls = list(glob.iglob(f"{x}/**/*.smali",recursive=True))
-			for fx in self.f_ls:
-				if os.path.isfile(fx) and fx.endswith(".smali"):
-					self.ffx = open(fx,"r").read()
-					self.readperline = self.ffx.strip().split(endl)
-					while "" in self.readperline:
-						self.readperline.remove("")
-					self.modifiedsourcefile = ""
-					for rpl_iterx in self.readperline:
-						if "invoke" in rpl_iterx and "gms" in rpl_iterx:
-							for rpl_itery in strmatch["adloader"]:
-								if rpl_itery in rpl_iterx:
-									if rpl_iterx.strip().endswith(")V"):
-										print("*"*int(system("tput cols")))
-										self.success(f"[+] Patch (invoke~()V): {fx}")
-										self.warning(rpl_iterx)
-										rpl_iterx = rpl_iterx.replace(rpl_iterx.strip(),"invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()V")
-										self.success(rpl_iterx)
-									elif rpl_iterx.strip().endswith(")Z"):
-										print("*"*int(system("tput cols")))
-										self.success(f"[+] Patch (invoke~()Z): {fx}")
-										self.warning(rpl_iterx)
-										rpl_iterx = rpl_iterx.replace(rpl_iterx.strip(),"invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z")
-										self.success(rpl_iterx)
-						elif "const-string-still-fix-issue" in rpl_iterx:
-							print(f"\x1b[1;92m[+] Patch (const-string): {fx}... \x1b[0m")
-							self.constvar = re.findall(r"const-string\s(v[0-9]+|p[0-9]+),\s\"(.*?)\"", rpl_iterx)[0][0]
-							rpl_iterx = rpl_iterx.replace(rpl_iterx.strip(),f"const-string {self.constvar}, \"null\"")
-						self.modifiedsourcefile += rpl_iterx+endl
-					open(fx,"w").write(self.modifiedsourcefile)
+			with multiprocessing.Pool(CPU_COUNT) as pool:
+				results = pool.map(_ads4_file_worker, self.f_ls, chunksize=50)
+			for fx, modified in results:
+				if modified:
+					self.success(f"[+] Patch (adloader neutralized): {fx}")
 					self.ismodified = True
 		if self.ismodified: self.writeNeutralize()
 	def removeAds5(self):
@@ -497,53 +529,30 @@ class patcher:
 			print("\x1b[1;92mDetected:\x1b[0m")
 			for class_name in class_list:
 				print(f"\x1b[1;92m ✓ {class_name}\x1b[0m")
-		# new class_list with regex
-		class_reg = []
+		# new class_list with regex, grouped per literal class_name so we can
+		# skip files that don't even contain that substring (cheap `in` check)
+		# before running the expensive regexes for it.
+		class_patterns = {}
 		opcodes = ["move-result", "new-instance", "iget", "iput", "const-string"]
 		for class_name in class_list:
-			class_name = re.escape(class_name)
-			class_reg.append([
-				rf'.*invoke.*{class_name}.*\)Z',
-				'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Ljava/lang/Object;'
-			])
-			class_reg.append([
-				rf'.*invoke.*{class_name}.*\)V',
-				'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()V'
-			])
-			class_reg.append([
-				rf'.*invoke.*{class_name}.*\)Ljava/lang/Object;',
-				'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z'
-			])
+			esc = re.escape(class_name)
+			patterns = [
+				(re.compile(rf'.*invoke.*{esc}.*\)Z'), 'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Ljava/lang/Object;'),
+				(re.compile(rf'.*invoke.*{esc}.*\)V'), 'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()V'),
+				(re.compile(rf'.*invoke.*{esc}.*\)Ljava/lang/Object;'), 'invoke-static {}, Lsec/blackhole/dtlx/Schadenfreude;->neutralize()Z'),
+			]
 			for opcode in opcodes:
-				opcode = re.escape(opcode)
-				class_reg.append([rf'.*{opcode}.*{class_name}.*',""])
+				opcode_esc = re.escape(opcode)
+				patterns.append((re.compile(rf'.*{opcode_esc}.*{esc}.*'), ""))
+			class_patterns[class_name] = patterns
 		civis()
 		for smalixdir in self.smalidir:
 			self.f_ls = list(glob.iglob(f"{smalixdir}/**/*.smali",recursive=True))
-			totalpbar = len(self.f_ls)
-			counter = 0
-			ldc = 0
-			for file in self.f_ls:
-				counter += 1
-				print(f"\r\x1b[1;93m[{loading[ldc]}] scan dirs: {smalixdir} ({counter}/{totalpbar} files)\x1b[0m   ",end="")
-				sys.stdout.flush()
-				ldc += 1
-				if ldc >= len(loading):
-					ldc = 0
-				smalicodes = open(file,"r").read()
-				for regex in class_reg:
-					reg = re.findall(regex[0],smalicodes)
-					if len(reg) > 0:
-						regtext = f"\x1b[1;94m[*] regex: {regex[0]}\x1b[0m"
-						if len(regtext) < cols:
-							print(regtext+" "*(cols-len(regtext)))
-						print(f"\x1b[1;92m[+] found: {file}\x1b[0m")
-						smalicodes = re.sub(regex[0],regex[1],smalicodes)
-						print(f"\x1b[1;41;93m[!] result: {reg[0]}\x1b[0m")
-						print(f"\x1b[1;93m[~] replacement: '{regex[1]}'\x1b[0m\n")
-						print(f"\x1b[1;96m[*] scan dirs: {f} ({totalpbar} files)\x1b[0m")
-				with open(file,"w") as sw:
-					sw.write(smalicodes)
+			with multiprocessing.Pool(CPU_COUNT) as pool:
+				results = pool.map(_tracker_file_worker, [(file, class_patterns) for file in self.f_ls], chunksize=50)
+			for file, modified in results:
+				if modified:
+					print(f"\x1b[1;92m[+] patched: {file}\x1b[0m")
 		cnorm()
 		self.writeNeutralize()
 		self.cleanManifest(class_name)
@@ -1092,36 +1101,11 @@ class patcher:
 		civis()
 		for smalixdir in self.smalidir:
 			self.f_ls = list(glob.iglob(f"{smalixdir}/**/*.smali",recursive=True))
-			totalpbar = len(self.f_ls)
-			counter = 0
-			ldc = 0
-			for file in self.f_ls:
-				counter += 1
-				#print(f"\r\x1b[1;93m[{loading[ldc]}] scan dirs: {smalixdir} ({counter}/{totalpbar} files)\x1b[0m   ",end="")
-				sys.stdout.flush()
-				ldc += 1
-				if ldc >= len(loading):
-					ldc = 0
-				smalicodes = open(file,"r").read()
-				hasmodified = False
-				for regex in regexList:
-					matches = re.findall(regex[0],smalicodes)
-					matches = list(filter(lambda x: x[0], matches))
-					if len(matches) > 0:
-						smalicodes = re.sub(regex[0],regex[1],smalicodes)
-						print(f"\x1b[1;96m[*] \x1b[97mregex: \x1b[0;92m{regex[0]}\x1b[0m")
-						for result in matches:
-							if not isinstance(result,tuple):
-								print(f"\x1b[1;93m[-] \x1b[97mfound: \x1b[0;41;93m{result}\x1b[0m")
-							else:
-								print(f"\x1b[1;93m[-] \x1b[97mfound: \x1b[0;41;93m{result[0]}\x1b[0m")
-						print(f"\x1b[1;93m[-] \x1b[97mfile: \x1b[93m{file}\x1b[0m")
-						print(f"\x1b[1;92m[+] \x1b[97mreplacement: \x1b[1;92m'{regex[1]}'\x1b[0m\n")
-						hasmodified = True
-				if hasmodified:
-					with open(file,"w") as sw:
-						sw.write(smalicodes)
-			print()
+			with multiprocessing.Pool(CPU_COUNT) as pool:
+				results = pool.map(_regex_file_worker, [(file, regexList) for file in self.f_ls], chunksize=50)
+			for file, modified in results:
+				if modified:
+					print(f"\x1b[1;92m[+] patched: {file}\x1b[0m")
 		cnorm()
 		self.writeNeutralize()
 	def bypassSSL(self):
